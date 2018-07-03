@@ -33,7 +33,7 @@ parms.parser.add_argument("--bcc", dest='bcc', nargs='+', default=[], action='ap
 parms.parser.add_argument("--subject", dest='subject', default='Shir Hadash High Holiday Information')
 parms.parser.add_argument("--attachment", dest='attachment', nargs='+', default=[], action='append')
 
-globals.setup(parms, connect=False)
+globals.setup(parms, connect=False, gotodatadir=False)
 
 parms.sender = parms.__dict__['from']  # Get around reserved word
 
