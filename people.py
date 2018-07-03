@@ -40,6 +40,32 @@ def stringify(value):
         value = ('%s' % value)[0:10]
 
     return value
+    
+class Nickname:
+    nicknames = {}
+    def __init__(self, first, last, newfirst='', newlast=''):
+        self.first = first
+        self.last = last
+        self.newfirst = newfirst if newfirst else first
+        self.newlast = newlast if newlast else last
+        self.key = self.first + ' ' + self.last
+        self.newkey = self.newfirst + ' ' + self.newlast
+        self.nicknames[self.key] = self
+        
+    @classmethod
+    def find(self, key):
+        try:
+            return self.nicknames[key]
+        except KeyError:
+            return None
+
+        
+    @classmethod
+    def setnicknames(self):
+        Nickname('Patricia', 'Uro-May', 'Pat')
+        
+    def __repr__(self):
+        return('key: %s, first: %s => %s, last: %s => %s' % (self.key, self.first, self.newfirst, self.last, self.newlast))
 
 
 class People:
@@ -103,6 +129,22 @@ class People:
             
     def getaddr(self):
         return "%s, %s, %s  %s" % (self.streetaddress, self.city, self.state, self.postalcode)
+        
+    def handlenickname(self):
+        """Process names where the roster has a formal name but we want to use an informal name"""
+        update = Nickname.find(self.key)
+        if update:
+            dparts = self.displayname.split()
+            for i in range(len(dparts)):
+                if dparts[i] == self.firstname:
+                    dparts[i] = update.newfirst
+                if dparts[i] == self.lastname:
+                    dparts[i] = update.newlast
+            self.displayname = ' '.join(dparts)
+            (self.key, self.firstname, self.lastname) = (update.newkey, update.newfirst, update.newlast)
+
+
+            
 	
     def __init__(self, row):
         for x in range(len(row)):
@@ -121,6 +163,8 @@ class People:
         self.streetaddress = ' '.join(sa)
         
         self.key = self.firstname + ' ' + self.lastname
+        self.handlenickname()
+        
         self.internalcontactid = self.getlinenumber()
         self.people[self.internalcontactid] = self
         
@@ -134,6 +178,9 @@ class People:
             self.people[self.key].append(self)
         else:
             self.people[self.key] = [self]
+ 
+    def __repr__(self):
+        return "display = '%s', first = '%s', last = %s, address = %s, email = %s" % (self.displayname, self.firstname, self.lastname, self.streetaddress, self.email)
         
 
 if __name__ == "__main__":
@@ -141,7 +188,9 @@ if __name__ == "__main__":
         filename = 'People.xlsx'
     else:
         filename = sys.argv[1]
+    Nickname.setnicknames()
     People.loadpeople(filename, debug=True)
+
 
         
 		
