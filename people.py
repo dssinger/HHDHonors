@@ -12,13 +12,22 @@ from datetime import datetime, date
 
 
 def getLabelsFromSheet(sheet):
-  """Returns all of the labels from a spreadsheet as a dict"""
-  labels = [''.join(p.split()).lower() for p in sheet.row_values(0)]
-  ret = dict(zip(labels, xrange(len(labels))))
-  # Provide two-way associativity
-  for p in ret.keys():
-    ret[ret[p]] = p
-  return ret
+    """Returns all of the labels from a spreadsheet as a dict
+     Labels are normalized by converting them to lower case,
+        removing any leading "home-", and
+        removing all spaces. """
+    labels = []
+    for p in sheet.row_values(0):
+        p = p.lower()
+        if p.startswith('home-'):
+            p = p[5:]
+        p = ''.join(p.split())
+        labels.append(p)  
+    ret = dict(zip(labels, xrange(len(labels))))
+    # Provide two-way associativity
+    for p in ret.keys():
+      ret[ret[p]] = p
+    return ret
 
 def stringify(value):
     """ Convert values to strings """
@@ -128,7 +137,11 @@ class People:
         
 
 if __name__ == "__main__":
-    People.loadpeople("People.xlsx", debug=True)
+    if len(sys.argv) == 1:
+        filename = 'People.xlsx'
+    else:
+        filename = sys.argv[1]
+    People.loadpeople(filename, debug=True)
 
         
 		
