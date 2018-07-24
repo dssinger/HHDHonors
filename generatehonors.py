@@ -257,171 +257,173 @@ def getLabelsFromSheet(sheet):
   for p in ret.keys():
     ret[ret[p]] = p
   return ret
-
-# We need to load service information first, because that determines whether we use Shabbat files or regular ones.
-# The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
-services = xlrd.open_workbook("Services Master.xlsx")
-datemode = services.datemode
-sheet = services.sheets()[0]
-# Put the labels into the Service class
-Service.setlabels(getLabelsFromSheet(sheet))
-
-# Now, load the services into the class
-for r in range(sheet.nrows-1):
-  Service(sheet.row_values(r+1))
-
-
-# The "Honors Master.xls" file has information about each possible honor,
-# including ones we aren't using this year.
-master = xlrd.open_workbook("HHD Honors Master.xlsx")
-sheet = master.sheets()[0]
-Honor.setlabels(getLabelsFromSheet(sheet))
-
-# Now, load the honors into the class
-for r in range(sheet.nrows-1):
-  Honor(sheet.row_values(r+1))
-
-# Now, load membership
-from people import People
-People.loadpeople("People.xlsx")
-
-
-# Now, process the assignments (the filename is given as the argument to this program)
-# Every line has a contact id (use only if duplicate names), first and last names, honor assigned (ignored), service (ignored), honorid
-# If the name and id are blank, the line is ignored.  
-
-
-book = xlrd.open_workbook(sys.argv[1])
-s = book.sheets()[0]
-labels = getLabelsFromSheet(s)
-
-# Assign honors.
-for r in range(s.nrows-1):
-  person = None
-  row = [stringify(v) for v in s.row_values(r+1)]
-  if row[labels['status']] != 'new':
-      continue
-  honor = Honor.find(row[labels['service']], row[labels['honorid']])
-  name = row[labels['firstname']] + ' ' + row[labels['lastname']]
-  name = space(name)
-  id = row[labels['internalcontactid']]
-  if id:
-      person = People.find(id)
-  elif name:
-      person = People.findbyname(name)
-  if person:
-      honor.assign(person)
-  elif id or name:
-      print "...for honor", honor.honorid
-
-
-
-
-
-
-
-## OK, now we can create the updated spreadsheet
-##   and build the batch file to print the cue sheets
-
-outfile = csv.writer(open('honors.csv', 'wb'))
-outfile.writerow(('Dear',
-  'Full_Name',
-  'Family_Address',
-  'Family_CSZ',
-  'Email1',
-  'Email2',
-  'Service',
-  'Service_Date',
-  'Service_Time',
-  'Location',
-  'Early',
-  'Arrive',
-  'Holiday',
-  'Rabbi',
-  'Honor',
-  'Book',
-  'Pages',
-  'Cue',
-  'FromText',
-  'ToText',
-  'Filename',
-  'Sharing',
-  'Explanation'))
   
-cuesheets = {}
-gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
-for theHonor in Honor.all:
-  if theHonor.honorforletter.lower() == 'none':
-      continue  # Skip honors that don't need letters generated.
+if __name__ == '__main__':
+
+    # We need to load service information first, because that determines whether we use Shabbat files or regular ones.
+    # The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
+    services = xlrd.open_workbook("Services Master.xlsx")
+    datemode = services.datemode
+    sheet = services.sheets()[0]
+    # Put the labels into the Service class
+    Service.setlabels(getLabelsFromSheet(sheet))
+
+    # Now, load the services into the class
+    for r in range(sheet.nrows-1):
+      Service(sheet.row_values(r+1))
+
+
+    # The "Honors Master.xls" file has information about each possible honor,
+    # including ones we aren't using this year.
+    master = xlrd.open_workbook("HHD Honors Master.xlsx")
+    sheet = master.sheets()[0]
+    Honor.setlabels(getLabelsFromSheet(sheet))
+
+    # Now, load the honors into the class
+    for r in range(sheet.nrows-1):
+      Honor(sheet.row_values(r+1))
+
+    # Now, load membership
+    from people import People
+    People.loadpeople("People.xlsx")
+
+
+    # Now, process the assignments (the filename is given as the argument to this program)
+    # Every line has a contact id (use only if duplicate names), first and last names, honor assigned (ignored), service (ignored), honorid
+    # If the name and id are blank, the line is ignored.  
+
+
+    book = xlrd.open_workbook(sys.argv[1])
+    s = book.sheets()[0]
+    labels = getLabelsFromSheet(s)
+
+    # Assign honors.
+    for r in range(s.nrows-1):
+      person = None
+      row = [stringify(v) for v in s.row_values(r+1)]
+      if row[labels['status']] != 'new':
+          continue
+      honor = Honor.find(row[labels['service']], row[labels['honorid']])
+      name = row[labels['firstname']] + ' ' + row[labels['lastname']]
+      name = space(name)
+      id = row[labels['internalcontactid']]
+      if id:
+          person = People.find(id)
+      elif name:
+          person = People.findbyname(name)
+      if person:
+          honor.assign(person)
+      elif id or name:
+          print "...for honor", honor.honorid
+
+
+
+
+
+
+
+    ## OK, now we can create the updated spreadsheet
+    ##   and build the batch file to print the cue sheets
+
+    outfile = csv.writer(open('honors.csv', 'wb'))
+    outfile.writerow(('Dear',
+      'Full_Name',
+      'Family_Address',
+      'Family_CSZ',
+      'Email1',
+      'Email2',
+      'Service',
+      'Service_Date',
+      'Service_Time',
+      'Location',
+      'Early',
+      'Arrive',
+      'Holiday',
+      'Rabbi',
+      'Honor',
+      'Book',
+      'Pages',
+      'Cue',
+      'FromText',
+      'ToText',
+      'Filename',
+      'Sharing',
+      'Explanation'))
+  
+    cuesheets = {}
+    gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
+    for theHonor in Honor.all:
+      if theHonor.honorforletter.lower() == 'none':
+          continue  # Skip honors that don't need letters generated.
      
-  if not theHonor.sharing():
-      continue  # Skip honors with no assignees
+      if not theHonor.sharing():
+          continue  # Skip honors with no assignees
   
-  # Figure out page and book.
-  if theHonor.pagestart:
-      theHonor.book = 'Mishkan Hanefesh'
-      if theHonor.pageend:
-          pages = 'pages %s-%s' % (theHonor.pagestart, theHonor.pageend)
+      # Figure out page and book.
+      if theHonor.pagestart:
+          theHonor.book = 'Mishkan Hanefesh'
+          if theHonor.pageend:
+              pages = 'pages %s-%s' % (theHonor.pagestart, theHonor.pageend)
+          else:
+              pages = 'page %s' % (theHonor.pagestart)
       else:
-          pages = 'page %s' % (theHonor.pagestart)
-  else:
-      theHonor.book = ''
-      pages = ''
+          theHonor.book = ''
+          pages = ''
   
-  theService = Service.services[theHonor.service]
+      theService = Service.services[theHonor.service]
   
-  honorname = theHonor.honorforletter.strip()
-  if not honorname:
-      honorname = theHonor.description
+      honorname = theHonor.honorforletter.strip()
+      if not honorname:
+          honorname = theHonor.description
   
-  for s in theHonor.sharing():
-      outfile.writerow((s['me'].dear,
-      s['me'].fullnames,
-      s['me'].addr,
-      s['me'].csz,
-      s['me'].email1,
-      s['me'].email2,
-      theService.service,
-      theService.date,
-      theService.time,
-      theService.location,
-      theService.early,
-      theService.arrive,
-      theService.daypart,
-      theService.rabbi,
-      honorname.replace(u'\u2026','...'),
-      theHonor.book,
-      pages,
-      theHonor.cue.replace(u'\u2026','...'),
-      theHonor.fromtext,
-      theHonor.totext,
-      theHonor.filename,
-      s['them'],
-      theHonor.explanation.replace(u'\u2026','...')))
+      for s in theHonor.sharing():
+          outfile.writerow((s['me'].dear,
+          s['me'].fullnames,
+          s['me'].addr,
+          s['me'].csz,
+          s['me'].email1,
+          s['me'].email2,
+          theService.service,
+          theService.date,
+          theService.time,
+          theService.location,
+          theService.early,
+          theService.arrive,
+          theService.daypart,
+          theService.rabbi,
+          honorname.replace(u'\u2026','...'),
+          theHonor.book,
+          pages,
+          theHonor.cue.replace(u'\u2026','...'),
+          theHonor.fromtext,
+          theHonor.totext,
+          theHonor.filename,
+          s['them'],
+          theHonor.explanation.replace(u'\u2026','...')))
       
-      if theHonor.filename:
-          snum = theHonor.filename[0]
-          if snum not in cuesheets:
-              cuesheets[snum] = []
-          cuesheets[snum].append((theHonor.filename, honorname, s['me'].fullnames))
+          if theHonor.filename:
+              snum = theHonor.filename[0]
+              if snum not in cuesheets:
+                  cuesheets[snum] = []
+              cuesheets[snum].append((theHonor.filename, honorname, s['me'].fullnames))
           
           
-# Finally, write the printing batch file
-import codecs
+    # Finally, write the printing batch file
+    import codecs
 
-for k in cuesheets:
-    batfile = codecs.open('print%s.sh' % k,'w', encoding='utf-8')
-    batfile.write('#!/bin/bash\n')
-    batfile.write('cd "../New HHD Cues and Readings"\n')
-    batfile.write('gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=%s.pdf \\\n' % k)
-    #cuesheets[k].reverse()
-    for s in cuesheets[k]:
-        batfile.write('    %s\\\n' % s[0])
+    for k in cuesheets:
+        batfile = codecs.open('print%s.sh' % k,'w', encoding='utf-8')
+        batfile.write('#!/bin/bash\n')
+        batfile.write('cd "../New HHD Cues and Readings"\n')
+        batfile.write('gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=%s.pdf \\\n' % k)
+        #cuesheets[k].reverse()
+        for s in cuesheets[k]:
+            batfile.write('    %s\\\n' % s[0])
 
-    batfile.write('\n')
-    for s in cuesheets[k]:
-        batfile.write('# %s - %s - %s\n' % s)
-    batfile.close()
+        batfile.write('\n')
+        for s in cuesheets[k]:
+            batfile.write('# %s - %s - %s\n' % s)
+        batfile.close()
     
 
     
