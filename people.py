@@ -118,6 +118,7 @@ class People:
                 ('Pat', 'Patricia')
                 )
                 
+    Nickname.setnicknames()
                 
     @classmethod
     def setlabels(self, labels):
@@ -226,10 +227,9 @@ class People:
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        filename = 'People.xlsx'
+        filename = '/Users/david/Dropbox/High Holy Day Honors/2018/2018 Roster for Honors.xlsx'
     else:
         filename = sys.argv[1]
-    Nickname.setnicknames()
     People.loadpeople(filename, debug=True)
 
 
