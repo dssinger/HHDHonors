@@ -50,7 +50,7 @@ labels = makeLabelsDict(values[0])
 namecols = (labels['name1'], labels['name2'])
 for row in values[1:]:
     for col in namecols:
-        name = row[col].strip()
+        name = ' '.join(row[col].strip().split())
         if not name:
             continue
         if name=='XXX':
@@ -58,6 +58,8 @@ for row in values[1:]:
         if 'anniversary' in name.lower():
             continue
         if 'confirmation' in name.lower():
+            continue
+        if 'presidents' in name.lower():
             continue
         person = People.findbyname(name)
         if person and '@' not in person.email:
