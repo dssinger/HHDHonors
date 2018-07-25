@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 import os, sys, xlrd
 from people import Nickname, People, getLabelsFromSheet, stringify
-from googleapiclient import discovery
 from generatehonors import Honor
 
 from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
+from gsheet import GSheet
+from pprint import pprint
 
 apikey = 'AIzaSyCvKjNGOxDw7KgAWyc_VjGdw7tlx7i4x84'
 honorsfile = '1pbffRKiaG7lMVeSii9EFLKay4KVMU2pmPQVozAOs9tM'
 
 Nickname.setnicknames()
-people = People.loadpeople('/Users/david/Desktop/2018 Roster for Honors.xlsx')
+people = People.loadpeople('/Users/david/Dropbox/High Holy Day Honors/2018/2018 Roster for Honors.xlsx')
 
 def makeLabelsDict(row):
     """Returns all of the labels from a spreadsheet as a dict
@@ -34,23 +35,11 @@ def makeLabelsDict(row):
 
 # Connect to the spreadsheet and get the values
 
+sheet = GSheet(honorsfile, apikey)
 
-service = discovery.build('sheets', 'v4', developerKey=apikey)
-request = service.spreadsheets().values().get(spreadsheetId=honorsfile, range='a1:zz999')
-try:
-    
-    values = request.execute()['values']
-    
-except Exception, e:
-    print e
-    
-# Find the labels
-labels = makeLabelsDict(values[0])
-
-namecols = (labels['name1'], labels['name2'])
-for row in values[1:]:
-    for col in namecols:
-        name = ' '.join(row[col].strip().split())
+for row in sheet:
+    for name in (row.name1, row.name2):
+        name = ' '.join(name.strip().split())
         if not name:
             continue
         if name=='XXX':
