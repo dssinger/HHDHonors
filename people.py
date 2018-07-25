@@ -62,7 +62,10 @@ class Nickname:
         
     @classmethod
     def setnicknames(self):
-        Nickname('Patricia', 'Uro-May', 'Pat')
+        Nickname('Ivan (Rusty)', 'Gralnik', 'Rusty')
+        Nickname('S. Henry', 'Stern', 'Henry')
+        Nickname('Itzhak', 'Nir', 'Itzik')
+        
         
     def __repr__(self):
         return('key: %s, first: %s => %s, last: %s => %s' % (self.key, self.first, self.newfirst, self.last, self.newlast))
@@ -91,6 +94,30 @@ class People:
                 'w': 'West',
                 'e': 'East'
             }
+            
+    namesyns = (('Bob', 'Robert', 'Robbie', 'Rob'),
+                ('Margie', 'Marjorie'),
+                ('Joe', 'Joseph'),
+                ('Irv', 'Irving'),
+                ('Andy', 'Andrew'),
+                ('Rich', 'Richard'),
+                ('Josh', 'Joshua'),
+                ('Cindy', 'Cynthia'),
+                ('Kim', 'Kimberly'),
+                ('Ed', 'Edward'),
+                ('Nick', 'Nicholas'),
+                ('Debbie', 'Deborah', 'Deb', 'Debra'),
+                ('Zach', 'Zack', 'Zachary'),
+                ('Rochelle', 'Shell'),
+                ('Barb', 'Barbara', 'Barbra'),
+                ('Liz', 'Elizabeth', 'Elisabeth'),
+                ('Mickey', 'Mike', 'Michael'),
+                ('John', 'Jon', 'Jonathan'),
+                ('Mady', 'Madeleine'),
+                ('Pat', 'Patricia')
+                )
+                
+                
     @classmethod
     def setlabels(self, labels):
         self.labels = labels
@@ -106,8 +133,21 @@ class People:
         s = xlrd.open_workbook(fn)
         sheet = s.sheets()[0]
         self.setlabels(getLabelsFromSheet(sheet))
+        firstnamecol = self.labels['firstname']
         for r in range(sheet.nrows-1):
-            People(sheet.row_values(r+1))
+            thisrow = [' '.join(stringify(what).split()) for what in sheet.row_values(r+1)]
+            
+            altnames = False
+            # Handle firstname synonyms:
+            for ng in self.namesyns:
+                if thisrow[firstnamecol] in ng:
+                    for name in ng:
+                        thisrow[firstnamecol] = name
+                        person = People(thisrow, ingroup=True)
+                    altnames = True
+                    break
+            if not altnames:
+                People(sheet.row_values(r+1))
             
     @classmethod
     def find(self, id):
@@ -118,7 +158,7 @@ class People:
             return False
             
     @classmethod
-    def findbyname(self, key):
+    def findbyname(self, key):        
         try:
             if len(self.people[key]) > 1:
                 print "%s has multiple entries; use ID!" % key
@@ -146,7 +186,7 @@ class People:
 
             
 	
-    def __init__(self, row):
+    def __init__(self, row, ingroup=False):
         for x in range(len(row)):
             self.__dict__[self.labels[x]] = ' '.join(stringify(row[x]).split())
         # Let's try to normalize the street address, at least for things like Dr/Dr./Drive
@@ -167,9 +207,9 @@ class People:
         
         self.internalcontactid = self.getlinenumber()
         self.people[self.internalcontactid] = self
+    
         
-        
-        if self.debug and self.key in self.people:
+        if self.debug and self.key in self.people and not ingroup:
             print "Duplicate: %s" % self.key
             other = self.people[self.key]
             for one in other:
