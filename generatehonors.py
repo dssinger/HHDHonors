@@ -21,9 +21,6 @@ datemode = 1  # make it global
 
 
 
-# assume the right name for the assignments file
-if len(sys.argv) < 2:
-    sys.argv.append('assignments.xlsx')
 
 def space(s):
   return ' '.join(s.split())
@@ -259,13 +256,15 @@ def getLabelsFromSheet(sheet):
   
 if __name__ == '__main__':
     
-    import yaml
+    import os
     from gsheet import GSheet
-    parms = yaml.load(open('honors.yaml','r'))
+    from parms import Parms
+    parms = Parms()
+    os.chdir(parms.datadir)
 
     # We need to load service information first, because that determines whether we use Shabbat files or regular ones.
     # The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
-    services = xlrd.open_workbook(parms['services'])
+    services = xlrd.open_workbook(parms.services)
     datemode = services.datemode
     sheet = services.sheets()[0]
     # Put the labels into the Service class
@@ -277,11 +276,11 @@ if __name__ == '__main__':
       
     # Now, load membership data
     from people import People
-    People.loadpeople(parms['roster'])
+    People.loadpeople(parms.roster)
 
     # The Honors file now has honors AND assignmenbts, and it's a Google spreadsheet instead of an Excel file.
     
-    master = GSheet(parms['honors'], parms['apikey'])
+    master = GSheet(parms.honors, parms.apikey)
     Honor.setlabels(master.labels)
     
     
@@ -308,7 +307,7 @@ if __name__ == '__main__':
     ## OK, now we can create the updated spreadsheet
     ##   and build the batch file to print the cue sheets
 
-    outfile = csv.writer(open('honors.csv', 'w'))
+    outfile = csv.writer(open(parms.honorscsv, 'w'))
     outfile.writerow(('Dear',
       'Full_Name',
       'Family_Address',
@@ -324,6 +323,7 @@ if __name__ == '__main__':
       'Arrive',
       'Holiday',
       'Rabbi',
+      'HonorID',
       'Honor',
       'Book',
       'Pages',
@@ -361,6 +361,10 @@ if __name__ == '__main__':
           honorname = theHonor.description
   
       for s in theHonor.sharing():
+          if '@' not in s['me'].email1  or (s['me'].email2 and '@' not in s['me'].email2):
+              print('Missing email for %s' % s['me'].fullnames)
+              s['me'].sendpaper = True 
+          
           outfile.writerow((s['me'].dear,
           s['me'].fullnames,
           s['me'].addr,
@@ -376,6 +380,7 @@ if __name__ == '__main__':
           theService.arrive,
           theService.daypart,
           theService.rabbi,
+          theHonor.honorid,
           honorname.replace('\\u2026','...'),
           theHonor.book,
           pages,
@@ -393,7 +398,7 @@ if __name__ == '__main__':
               cuesheets[snum].append((theHonor.filename, honorname, s['me'].fullnames))
           
           
-    # Finally, write the printing batch file
+    # Finally, write the printing batch files
     import codecs
 
     for k in cuesheets:
