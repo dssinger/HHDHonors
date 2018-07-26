@@ -1,18 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Send an email contained in a file. """
-import tmparms, os, sys, argparse, smtplib
+import cshparse, os, sys, argparse, smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart 
 from email.mime.application import MIMEApplication
 
-import tmglobals
-globals = tmglobals.tmglobals()
 
-import collections
+
+import collections.abc
 def flatten(l):
     ### From http://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists-in-python
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+        if isinstance(el, collections.abc.Iterable) and not isinstance(el, str):
             for sub in flatten(el):
                 yield sub
         else:
@@ -20,7 +19,7 @@ def flatten(l):
 
 
 # Handle parameters
-parms = tmparms.tmparms(description=__doc__, YMLfile="tmmail.yml", includedbparms=False)
+parms = cshparse.cshparse(description=__doc__, YMLfile="cshmail.yml", includedbparms=False)
 parms.parser.add_argument("--htmlfile", dest='htmlfile')
 parms.parser.add_argument("--textfile", dest='textfile')
 parms.parser.add_argument("--mailserver", dest='mailserver')
@@ -33,8 +32,7 @@ parms.parser.add_argument("--bcc", dest='bcc', nargs='+', default=[], action='ap
 parms.parser.add_argument("--subject", dest='subject', default='Shir Hadash High Holiday Information')
 parms.parser.add_argument("--attachment", dest='attachment', nargs='+', default=[], action='append')
 
-globals.setup(parms, connect=False, gotodatadir=False)
-
+parms.parse()
 parms.sender = parms.__dict__['from']  # Get around reserved word
 
 if parms.attachment:
