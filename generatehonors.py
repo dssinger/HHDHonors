@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vim: set fileencoding=utf-8 :
 """ Create the honors.csv file for the mail merge.
   For each honor (unique to service, of course), find all those sharing
@@ -50,7 +50,7 @@ def normalizeHonor(honor):
 def stringify(value):
   """ Convert values to strings """
   # Let's normalize everything to strings/unicode strings
-  if isinstance(value, (int, long, float)):
+  if isinstance(value, (int, float)):
       value = '%d' % value
   if isinstance(value, bool):
       value = '1' if value else '0'
@@ -74,7 +74,7 @@ class Service:
   
   def __init__(self, row):
     # Convert the items in the row into attributes of the object
-    for x in xrange(len(row)):
+    for x in range(len(row)):
       attrname = self.labels[x]
       if attrname not in ('time', 'arrive', 'date', 'early'):
           row[x] = stringify(row[x])
@@ -147,7 +147,7 @@ class Honor:
   def __init__(self, row):
     # This method defines an honor and puts it in the class indexed by the HonorID
     # the service has the sequence number removed, and RH and YK expanded
-    print(row)
+    #print(row)
     row.service = normalizeService(row.service)
     
     # Convert the items in the row into attributes of the object.  Make some substitutios in attribute name.
@@ -179,7 +179,7 @@ class Honor:
   
   def __repr__(self):
     ans = "{'sharers': '%s'," % self.sharers
-    ans += ', '.join(["'%s': '%s'" % (x, self.__dict__[x]) for x in self.labels.keys()])
+    ans += ', '.join(["'%s': '%s'" % (x, self.__dict__[x]) for x in list(self.labels.keys())])
     return ans
 
   
@@ -192,10 +192,10 @@ class Honor:
     res = []
     sharers = [self.sharers[k] for k in self.sharers]
     sharers.sort(key=lambda x: x.dear)
-    for i in xrange(len(sharers)):
+    for i in range(len(sharers)):
       entry = {}
       entry['me']= sharers[i]
-      them = [sharers[j].fullnames for j in xrange(len(sharers)) if j <> i]
+      them = [sharers[j].fullnames for j in range(len(sharers)) if j != i]
       if len(them) == 0:
         entry['them'] = ''
       elif len(them) == 1:
@@ -223,6 +223,7 @@ class Honoree:
     self.csz = self.city + ' ' + self.state + ', ' + self.zip
     self.address = '\n'.join([self.addr, self.csz])
     self.dear = self.firstname
+    self.sendpaper = person.sendpaper
     try:
         self.email1 = person.email
     except AttributeError:
@@ -250,9 +251,9 @@ class Honoree:
 def getLabelsFromSheet(sheet):
   """Returns all of the labels from a spreadsheet as a dict"""
   labels = [''.join(p.split()).lower() for p in sheet.row_values(0)]
-  ret = dict(zip(labels, xrange(len(labels))))
+  ret = dict(list(zip(labels, list(range(len(labels))))))
   # Provide two-way associativity
-  for p in ret.keys():
+  for p in list(ret.keys()):
     ret[ret[p]] = p
   return ret
   
@@ -293,6 +294,7 @@ if __name__ == '__main__':
         # Do the assignments
         for name in (row.name1, row.name2):
             if name:
+                name = ' '.join(name.strip().split())
                 lname = name.lower()
                 if lname != 'xxx' and 'anniversary' not in lname and 'confirmation' not in lname:
                     person = People.findbyname(name)
@@ -306,13 +308,14 @@ if __name__ == '__main__':
     ## OK, now we can create the updated spreadsheet
     ##   and build the batch file to print the cue sheets
 
-    outfile = csv.writer(open('honors.csv', 'wb'))
+    outfile = csv.writer(open('honors.csv', 'w'))
     outfile.writerow(('Dear',
       'Full_Name',
       'Family_Address',
       'Family_CSZ',
       'Email1',
       'Email2',
+      'Send_Paper',
       'Service',
       'Service_Date',
       'Service_Time',
@@ -364,6 +367,7 @@ if __name__ == '__main__':
           s['me'].csz,
           s['me'].email1,
           s['me'].email2,
+          s['me'].sendpaper,
           theService.service,
           theService.date,
           theService.time,
@@ -372,15 +376,15 @@ if __name__ == '__main__':
           theService.arrive,
           theService.daypart,
           theService.rabbi,
-          honorname.replace(u'\u2026','...'),
+          honorname.replace('\\u2026','...'),
           theHonor.book,
           pages,
-          theHonor.cue.replace(u'\u2026','...'),
+          theHonor.cue.replace('\\u2026','...'),
           theHonor.fromtext,
           theHonor.totext,
           theHonor.filename,
           s['them'],
-          theHonor.explanation.replace(u'\u2026','...')))
+          theHonor.explanation.replace('\\u2026','...')))
       
           if theHonor.filename:
               snum = theHonor.filename[0]

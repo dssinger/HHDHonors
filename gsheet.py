@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
+
 from googleapiclient import discovery
 import re
 from datetime import datetime, date
-from itertools import izip_longest
+from itertools import zip_longest
 
 
 def stringify(value):
     """ Convert values to strings and remove leading/trailing blanks """
     # Let's normalize everything to strings/unicode strings
-    if isinstance(value, (int, long, float, bool)):
+    if isinstance(value, (int, float, bool)):
         value = '%s' % value
     if isinstance(value, bool):
         value = '1' if value else '0'
@@ -22,7 +24,7 @@ class GSheet:
     class GSheetRow:
         def __init__(self, names, values):
             self.fieldnames = names
-            for (name, value) in izip_longest(names, values, fillvalue=''):
+            for (name, value) in zip_longest(names, values, fillvalue=''):
                 self.__dict__[name] = value
                 
         def __repr__(self):
@@ -64,7 +66,7 @@ class GSheet:
         return self
     
             
-    def next(self):
+    def __next__(self):
         self.rownum += 1
         if self.rownum >= len(self.values):
             raise StopIteration
