@@ -1,11 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys, xlrd
 from people import People
 from generatehonors import Honor
 
 from apiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file, client, tools
 from gsheet import GSheet
 from pprint import pprint
 
@@ -36,5 +34,5 @@ for row in sheet:
             continue
         person = People.findbyname(name)
         if person and '@' not in person.email:
-            print name, 'has no email'
+            print(name, 'has no email')
         

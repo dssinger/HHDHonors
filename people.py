@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """People (for HHD, based on Shul Suite data)
 
 Creates an array of people indexed by "firstname lastname", containing their address fields.
@@ -9,6 +9,7 @@ If any names are duplicated, complains.
 import xlrd
 import sys
 from datetime import datetime, date
+
 
 
 def getLabelsFromSheet(sheet):
@@ -23,23 +24,23 @@ def getLabelsFromSheet(sheet):
             p = p[5:]
         p = ''.join(p.split())
         labels.append(p)  
-    ret = dict(zip(labels, xrange(len(labels))))
+    ret = dict(list(zip(labels, list(range(len(labels))))))
     # Provide two-way associativity
-    for p in ret.keys():
+    for p in list(ret.keys()):
       ret[ret[p]] = p
     return ret
 
 def stringify(value):
     """ Convert values to strings """
     # Let's normalize everything to strings/unicode strings
-    if isinstance(value, (int, long, float)):
+    if isinstance(value, (int, float)):
         value = '%d' % value
     if isinstance(value, bool):
         value = '1' if value else '0'
     elif isinstance(value, (datetime, date)):
         value = ('%s' % value)[0:10]
 
-    return value
+    return str(value).strip()
     
 class Nickname:
     nicknames = {}
@@ -156,17 +157,17 @@ class People:
         try:
             return self.people[id]
         except KeyError:
-            print "Could not find %s" % id
+            print("Could not find %s" % id)
             return False
             
     @classmethod
     def findbyname(self, key):        
         try:
             if len(self.people[key]) > 1:
-                print "%s has multiple entries; use ID!" % key
+                print("%s has multiple entries; use ID!" % key)
             return self.people[key][0]
         except KeyError:
-            print "Could not find %s" % key
+            print("Could not find %s" % key)
             return False
             
     def getaddr(self):
@@ -204,6 +205,10 @@ class People:
                 sa.append(w)
         self.streetaddress = ' '.join(sa)
         
+        # Remove honorifics from displayname
+        self.fulldisplayname = self.displayname
+        self.displayname = self.displayname.replace('Mrs. ','').replace('Mr. ','').replace('Dr. ','').replace('Ms. ','').replace('Miss ','')
+        
         self.key = self.firstname + ' ' + self.lastname
         self.handlenickname()
         
@@ -211,18 +216,19 @@ class People:
         self.people[self.internalcontactid] = self
     
         
-        if self.debug and self.key in self.people and not ingroup:
-            print "Duplicate: %s" % self.key
-            other = self.people[self.key]
-            for one in other:
-                print "  Old: ID=%5s, address=%s" % (one.internalcontactid, one.getaddr())
-            print "  New: ID=%5s, address=%s" % (self.internalcontactid, self.getaddr())
+        if self.debug and self.key in self.people:
+            if not ingroup:
+                print("Duplicate: %s" % self.key)
+                other = self.people[self.key]
+                for one in other:
+                    print("  Old: ID=%5s, address=%s" % (one.internalcontactid, one.getaddr()))
+                print("  New: ID=%5s, address=%s" % (self.internalcontactid, self.getaddr()))
             self.people[self.key].append(self)
         else:
             self.people[self.key] = [self]
  
-    def __repr__(self):
-        return "display = '%s', first = '%s', last = %s, address = %s, email = %s" % (self.displayname, self.firstname, self.lastname, self.streetaddress, self.email)
+    def __rexpr__(self):
+        return "display = '%s', first = '%s', last = '%s', address = '%s', email = '%s', sendpaper = %s" % (self.displayname, self.firstname, self.lastname, self.streetaddress, self.email, self.sendpaper)
         
 
 if __name__ == "__main__":
@@ -230,7 +236,8 @@ if __name__ == "__main__":
         filename = '/Users/david/Dropbox/High Holy Day Honors/2018/2018 Roster for Honors.xlsx'
     else:
         filename = sys.argv[1]
-    People.loadpeople(filename, debug=True)
+    People.loadpeople(filename)
+
 
 
         
