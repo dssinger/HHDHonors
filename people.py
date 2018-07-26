@@ -67,6 +67,7 @@ class Nickname:
         Nickname('S. Henry', 'Stern', 'Henry')
         Nickname('Itzhak', 'Nir', 'Itzik')
         Nickname('Isabelle', 'Schneider', 'Billee')
+        Nickname('Rebecca Katz', 'Tedesco', 'Rebecca', 'Katz Tedesco')
         
         
     def __repr__(self):
@@ -232,11 +233,12 @@ class People:
         
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        filename = '/Users/david/Dropbox/High Holy Day Honors/2018/2018 Roster for Honors.xlsx'
-    else:
-        filename = sys.argv[1]
-    People.loadpeople(filename)
+    from parms import Parms
+    import os
+    parms = Parms()
+    os.chdir(parms.datadir)
+    People.loadpeople(parms.roster)
+
 
 
 
