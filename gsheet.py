@@ -1,6 +1,7 @@
 from googleapiclient import discovery
 import re
 from datetime import datetime, date
+from itertools import izip_longest
 
 
 def stringify(value):
@@ -20,8 +21,13 @@ class GSheet:
     # We return a class with items that match the column labels as normalized
     class GSheetRow:
         def __init__(self, names, values):
-            for (name, value) in zip(names, values):
+            self.fieldnames = names
+            for (name, value) in izip_longest(names, values, fillvalue=''):
                 self.__dict__[name] = value
+                
+        def __repr__(self):
+            return ', '.join(["%s = '%s'" % (name, self.__dict__[name]) for name in self.fieldnames])
+            
     
 
     
