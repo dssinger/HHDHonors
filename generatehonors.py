@@ -19,9 +19,7 @@ import os
 
 datemode = 1  # make it global
 
-# Gross hack to run inside of TextMate
-if 'TM_DIRECTORY' in os.environ:
-    os.chdir(os.environ['TM_DIRECTORY'])
+
 
 # assume the right name for the assignments file
 if len(sys.argv) < 2:
@@ -132,9 +130,8 @@ class Honor:
   
   
   @classmethod
-  def find(self, service, honor):
-    #honor = normalizeHonor(honor)
-    return self.honors[honor]
+  def find(self, honorid):
+    return self.honors.get(honorid, None)
   
   def assign(self, person):
     keys = ['streetaddress', 'city', 'state', 'postalcode']
@@ -150,16 +147,17 @@ class Honor:
   def __init__(self, row):
     # This method defines an honor and puts it in the class indexed by the HonorID
     # the service has the sequence number removed, and RH and YK expanded
-    row[self.labels['service']] = normalizeService(row[self.labels['service']])
+    print(row)
+    row.service = normalizeService(row.service)
     
     # Convert the items in the row into attributes of the object.  Make some substitutios in attribute name.
-    for x in xrange(len(row)):
-      attrname = self.labels[x]
+    for x in self.labels:
+      attrname = x
       if attrname == 'from':
           attrname = 'fromtext'
       elif attrname == 'to':
           attrname = 'totext'
-      self.__dict__[attrname] = stringify(row[x])
+      self.__dict__[attrname] = stringify(row.__dict__[x])
     self.sharers = {}  # Indexed by address, of course
     self.honors[self.honorid] = self
     
@@ -259,10 +257,14 @@ def getLabelsFromSheet(sheet):
   return ret
   
 if __name__ == '__main__':
+    
+    import yaml
+    from gsheet import GSheet
+    parms = yaml.load(open('honors.yaml','r'))
 
     # We need to load service information first, because that determines whether we use Shabbat files or regular ones.
     # The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
-    services = xlrd.open_workbook("Services Master.xlsx")
+    services = xlrd.open_workbook(parms['services'])
     datemode = services.datemode
     sheet = services.sheets()[0]
     # Put the labels into the Service class
@@ -271,53 +273,32 @@ if __name__ == '__main__':
     # Now, load the services into the class
     for r in range(sheet.nrows-1):
       Service(sheet.row_values(r+1))
-
-
-    # The "Honors Master.xls" file has information about each possible honor,
-    # including ones we aren't using this year.
-    master = xlrd.open_workbook("HHD Honors Master.xlsx")
-    sheet = master.sheets()[0]
-    Honor.setlabels(getLabelsFromSheet(sheet))
-
-    # Now, load the honors into the class
-    for r in range(sheet.nrows-1):
-      Honor(sheet.row_values(r+1))
-
-    # Now, load membership
+      
+    # Now, load membership data
     from people import People
-    People.loadpeople("People.xlsx")
+    People.loadpeople(parms['roster'])
 
-
-    # Now, process the assignments (the filename is given as the argument to this program)
-    # Every line has a contact id (use only if duplicate names), first and last names, honor assigned (ignored), service (ignored), honorid
-    # If the name and id are blank, the line is ignored.  
-
-
-    book = xlrd.open_workbook(sys.argv[1])
-    s = book.sheets()[0]
-    labels = getLabelsFromSheet(s)
-
-    # Assign honors.
-    for r in range(s.nrows-1):
-      person = None
-      row = [stringify(v) for v in s.row_values(r+1)]
-      if row[labels['status']] != 'new':
-          continue
-      honor = Honor.find(row[labels['service']], row[labels['honorid']])
-      name = row[labels['firstname']] + ' ' + row[labels['lastname']]
-      name = space(name)
-      id = row[labels['internalcontactid']]
-      if id:
-          person = People.find(id)
-      elif name:
-          person = People.findbyname(name)
-      if person:
-          honor.assign(person)
-      elif id or name:
-          print "...for honor", honor.honorid
-
-
-
+    # The Honors file now has honors AND assignmenbts, and it's a Google spreadsheet instead of an Excel file.
+    
+    master = GSheet(parms['honors'], parms['apikey'])
+    Honor.setlabels(master.labels)
+    
+    
+    for row in master:
+        # Have we already defined this honor?
+        honor = Honor.find(row.honorid)
+        if not honor:
+            honor = Honor(row)
+            
+        # Do the assignments
+        for name in (row.name1, row.name2):
+            if name:
+                lname = name.lower()
+                if lname != 'xxx' and 'anniversary' not in lname and 'confirmation' not in lname:
+                    person = People.findbyname(name)
+                    if person:
+                        honor.assign(person)
+                    
 
 
 
