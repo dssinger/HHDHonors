@@ -9,16 +9,17 @@ from oauth2client import file, client, tools
 from gsheet import GSheet
 from pprint import pprint
 
-apikey = 'AIzaSyCvKjNGOxDw7KgAWyc_VjGdw7tlx7i4x84'
-honorsfile = '1pbffRKiaG7lMVeSii9EFLKay4KVMU2pmPQVozAOs9tM'
+import yaml
 
-people = People.loadpeople('/Users/david/Dropbox/High Holy Day Honors/2018/2018 Roster for Honors.xlsx')
+parms = yaml.load(open('honors.yaml','r'))
+
+people = People.loadpeople(parms['roster'])
 
 
 
 # Connect to the spreadsheet and get the values
 
-sheet = GSheet(honorsfile, apikey)
+sheet = GSheet(parms['honors'], parms['apikey'])
 
 for row in sheet:
     for name in (row.name1, row.name2):
