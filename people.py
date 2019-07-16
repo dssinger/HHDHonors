@@ -68,6 +68,7 @@ class Nickname:
         Nickname('Itzhak', 'Nir', 'Itzik')
         Nickname('Isabelle', 'Schneider', 'Billee')
         Nickname('Rebecca Katz', 'Tedesco', 'Rebecca', 'Katz Tedesco')
+        Nickname('Hugh', 'Seid-Valencia', 'Rabbi Hugh', 'Seid-Valencia')
         
         
     def __repr__(self):
