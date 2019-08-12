@@ -131,23 +131,21 @@ class Honor:
     return self.honors.get(honorid, None)
   
   def assign(self, person):
-    keys = ['streetaddress', 'city', 'state', 'postalcode']
-    address = ' '.join(person.__dict__[k] for k in keys)
     try:
-      self.sharers[address].addname(person)
+      self.sharers[person.household_id].addname(person)
     except KeyError:
-      self.sharers[address] = Honoree(person)
+      self.sharers[person.household_id] = Honoree(person)
 
   
   
   
   def __init__(self, row):
-    # This method defines an honor and puts it in the class indexed by the HonorID
+    # This method defines an honor and puts it in the class indexed by the HonorID+alternative
     # the service has the sequence number removed, and RH and YK expanded
     #print(row)
     row.service = normalizeService(row.service)
     
-    # Convert the items in the row into attributes of the object.  Make some substitutios in attribute name.
+    # Convert the items in the row into attributes of the object.  Make some substitutions in attribute name.
     for x in self.labels:
       attrname = x
       if attrname == 'from':
@@ -155,7 +153,8 @@ class Honor:
       elif attrname == 'to':
           attrname = 'totext'
       self.__dict__[attrname] = stringify(row.__dict__[x])
-    self.sharers = {}  # Indexed by address, of course
+    self.sharers = {}  # Indexed by membership ID
+    self.honorid = self.honorid + self.alternative.strip()
     self.honors[self.honorid] = self
     
     # See if there's a file associated with the service; if so, do Shabbat adjustment if need be.
@@ -213,14 +212,16 @@ class Honoree:
     self.lastname = person.lastname.strip()
     self.fullname = person.displayname
     self.fullnames = self.fullname
-    self.addr = person.streetaddress
+    self.addr = person.address
+    if person.address_2:
+        self.addr += '\n' + person.address_2
     self.city = person.city
     self.state = person.state
-    self.zip = person.postalcode
+    self.zip = person.zip
     self.csz = self.city + ' ' + self.state + ', ' + self.zip
     self.address = '\n'.join([self.addr, self.csz])
     self.dear = self.firstname
-    self.sendpaper = person.sendpaper
+    self.sendpaper = False
     try:
         self.email1 = person.email
     except AttributeError:
@@ -278,20 +279,25 @@ if __name__ == '__main__':
     from people import People
     People.loadpeople(parms.roster)
 
-    # The Honors file now has honors AND assignmenbts, and it's a Google spreadsheet instead of an Excel file.
-    
-    master = GSheet(parms.honors, parms.apikey)
+    # Load all possible honors from the master file
+
+    master = GSheet(parms.honorsmaster, parms.apikey)
     Honor.setlabels(master.labels)
     
     
     for row in master:
-        # Have we already defined this honor?
+        Honor(row)
+
+    # Honor.all has all the honors.  Now, we process the assignment file
+
+    # Now, process the assignment file
+    assignments = GSheet(parms.assignments, parms.apikey)
+    for row in assignments:
         honor = Honor.find(row.honorid)
         if not honor:
-            honor = Honor(row)
-            
-        # Do the assignments
-        for name in (row.name1, row.name2):
+            print('Could not find honor', row.honorid)
+            continue
+        for name in (row.name1, row.name2, row.name3, row.name4):
             if name:
                 name = ' '.join(name.strip().split())
                 lname = name.lower()
@@ -299,6 +305,8 @@ if __name__ == '__main__':
                     person = People.findbyname(name)
                     if person:
                         honor.assign(person)
+                    else:
+                        print('Could not find %s for honor %s' % (name, row.honorid))
                     
 
 

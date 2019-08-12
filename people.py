@@ -22,7 +22,7 @@ def getLabelsFromSheet(sheet):
         replacing any '_' with spaces,
         removing any non-alphamerics (including spaces),
         replacing spaces with '_'.
-        We treat 'first_name' and 'last_name' specially to avoid problems elsewhere in the code.
+        We treat 'first_name', 'last_name', and 'id' specially to avoid problems elsewhere in the code.
         """
     labels = []
     for p in sheet.row_values(0):
@@ -38,6 +38,8 @@ def getLabelsFromSheet(sheet):
             p = p[:-1]
         p = p.replace('first_name', 'firstname')
         p = p.replace('last_name', 'lastname')
+        if p == 'id':
+            p = 'household_id'
         labels.append(p)  
     ret = dict(list(zip(labels, list(range(len(labels))))))
     # Provide two-way associativity
@@ -154,7 +156,7 @@ class People:
     @classmethod
     def loadpeople(self, fn, debug=False):
         self.debug = debug
-        commonfields = ('id', 'mail_name_informal', 'combined_name', 'address', 'address_2', 'city', 'state', 'zip' )
+        commonfields = ('household_id', 'mail_name_informal', 'combined_name', 'address', 'address_2', 'city', 'state', 'zip' )
         personfields = ('email', 'firstname', 'lastname')
         firstnamecol = personfields.index('firstname')
         thefields = personfields + commonfields
