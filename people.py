@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""People (for HHD, based on Shul Suite data)
+"""People (for HHD, based on ShulCloud data)
 
 Creates an array of people indexed by "firstname lastname", containing their address fields.
 If any names are duplicated, complains.
 
+ShulCloud has ONE record per household, containing all adults in the household.
+
 """
 
 import xlrd
-import sys
+import re
 from datetime import datetime, date
 
 
@@ -15,14 +17,27 @@ from datetime import datetime, date
 def getLabelsFromSheet(sheet):
     """Returns all of the labels from a spreadsheet as a dict
      Labels are normalized by converting them to lower case,
-        removing any leading "home-", and
-        removing all spaces. """
+        removing any leading "home-",
+        removing any "'s"
+        replacing any '_' with spaces,
+        removing any non-alphamerics (including spaces),
+        replacing spaces with '_'.
+        We treat 'first_name' and 'last_name' specially to avoid problems elsewhere in the code.
+        """
     labels = []
     for p in sheet.row_values(0):
         p = p.lower()
         if p.startswith('home-'):
             p = p[5:]
-        p = ''.join(p.split())
+        p = p.replace("'s", "")
+        p = p.replace('_', ' ')
+        p = '_'.join(re.split(r'\W+', p))
+        if p.startswith('_'):
+            p = p[1:]
+        if p.endswith('_'):
+            p = p[:-1]
+        p = p.replace('first_name', 'firstname')
+        p = p.replace('last_name', 'lastname')
         labels.append(p)  
     ret = dict(list(zip(labels, list(range(len(labels))))))
     # Provide two-way associativity
@@ -41,6 +56,10 @@ def stringify(value):
         value = ('%s' % value)[0:10]
 
     return str(value).strip()
+
+def normalize(value):
+    # Convert to string, and get rid of extraneous spaces
+    return ' '.join(stringify(value).split())
     
 class Nickname:
     nicknames = {}
@@ -126,7 +145,7 @@ class People:
     @classmethod
     def setlabels(self, labels):
         self.labels = labels
-        
+
     @classmethod
     def getlinenumber(self):
         self.linenumber += 1
@@ -135,24 +154,34 @@ class People:
     @classmethod
     def loadpeople(self, fn, debug=False):
         self.debug = debug
+        commonfields = ('id', 'mail_name_informal', 'combined_name', 'address', 'address_2', 'city', 'state', 'zip' )
+        personfields = ('email', 'firstname', 'lastname')
+        firstnamecol = personfields.index('firstname')
+        thefields = personfields + commonfields
+        p1fields = ['primary_' + f for f in personfields] + list(commonfields)
+        p2fields = ['secondary_' + f for f in personfields] + list(commonfields)
         s = xlrd.open_workbook(fn)
         sheet = s.sheets()[0]
         self.setlabels(getLabelsFromSheet(sheet))
-        firstnamecol = self.labels['firstname']
         for r in range(sheet.nrows-1):
-            thisrow = [' '.join(stringify(what).split()) for what in sheet.row_values(r+1)]
-            
-            altnames = False
-            # Handle firstname synonyms:
-            for ng in self.namesyns:
-                if thisrow[firstnamecol] in ng:
-                    for name in ng:
-                        thisrow[firstnamecol] = name
-                        person = People(thisrow, ingroup=True)
-                    altnames = True
-                    break
-            if not altnames:
-                People(sheet.row_values(r+1))
+            # Clean up the values and put them in a dictionary indexed by column label
+            values = [normalize(v) for v in sheet.row_values(r+1)]
+            row = {self.labels[i]: values[i] for i in range(len(values))}
+
+            for fgroup in (p1fields, p2fields):
+                # Load each person, taking firstname synonyms into account
+                altnames = False
+                # Handle firstname synonyms:
+                pinfo = [row[field] for field in fgroup]
+                for ng in self.namesyns:
+                    if row[fgroup[firstnamecol]] in ng:
+                        for name in ng:
+                            pinfo[firstnamecol] = name
+                            person = People(pinfo, thefields, ingroup=True)
+                        altnames = True
+                        break
+                if not altnames:
+                    People(pinfo, thefields)
             
     @classmethod
     def find(self, id):
@@ -191,13 +220,13 @@ class People:
 
             
 	
-    def __init__(self, row, ingroup=False):
+    def __init__(self, row, labels, ingroup=False):
         for x in range(len(row)):
-            self.__dict__[self.labels[x]] = ' '.join(stringify(row[x]).split())
+            setattr(self, labels[x], row[x])
         # Let's try to normalize the street address, at least for things like Dr/Dr./Drive
         
         sa = []
-        for w in self.streetaddress.split():
+        for w in self.address.split():
             wc = w.replace('.','')
             wc = wc.replace(',','')
             wc = wc.lower()
@@ -205,13 +234,11 @@ class People:
                 sa.append(self.synonyms[wc] + (',' if ',' in w else ''))
             else:
                 sa.append(w)
-        self.streetaddress = ' '.join(sa)
-        
-        # Remove honorifics from displayname
-        self.fulldisplayname = self.displayname
-        self.displayname = self.displayname.replace('Mrs. ','').replace('Mr. ','').replace('Dr. ','').replace('Ms. ','').replace('Miss ','')
+        self.address = ' '.join(sa)
+    
         
         self.key = self.firstname + ' ' + self.lastname
+        self.displayname = self.key
         self.handlenickname()
         
         self.internalcontactid = self.getlinenumber()
