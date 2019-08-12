@@ -39,7 +39,7 @@ def buildcmd(row):
     out = []
     if row.cuesheet:
         if row.pagestart:
-            if isinstance(row.pageend, int):
+            if isinstance(row.pageend, int) and (row.pagestart != row.pageend):
                 pages = [row.pagestart, row.pageend]
                 input = ' '.join(['"%s/%0.3d.pdf"' % (row.mazchor, page) for page in pages])
                 out.append('%s -o "%s/%s.pdf" %s' % (joincmd, outdir, row.honorid, input))
@@ -62,7 +62,7 @@ def buildcmd(row):
 
                 
                 
-outfile = open('doit.sh', 'w')
+outfile = open('makeallparts.sh', 'w')
 outfile.write('mkdir "%s"\n' % outdir)
 
 for row in sheet:
