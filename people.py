@@ -200,7 +200,7 @@ class People:
                 print("%s has multiple entries; use ID!" % key)
             return self.people[key][0]
         except KeyError:
-            print("Could not find %s" % key)
+            # print("Could not find %s" % key)
             return False
             
     def getaddr(self):
