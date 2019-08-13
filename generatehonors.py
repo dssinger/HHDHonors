@@ -293,6 +293,8 @@ if __name__ == '__main__':
     # Now, process the assignment file
     assignments = GSheet(parms.assignments, parms.apikey)
     for row in assignments:
+        if not row.honorid:
+            continue   # No honorid for many office-managed roles.
         honor = Honor.find(row.honorid)
         if not honor:
             print('Could not find honor', row.honorid)
