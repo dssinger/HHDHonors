@@ -210,11 +210,16 @@ class Honoree:
   def __init__(self, person):
     self.firstname = person.firstname.strip()
     self.lastname = person.lastname.strip()
-    self.fullname = person.displayname
+    self.nickname = person.nickname.strip()
+    if person.title.strip() == 'Rabbi':
+        self.title = 'Rabbi '
+    else:
+        self.title = ''
+    self.fullname = self.title + person.displayname
     self.fullnames = self.fullname
     self.addr = person.address
-    if person.address_2:
-        self.addr += '\n' + person.address_2
+    if person.address2:
+        self.addr += '\n' + person.address2
     self.city = person.city
     self.state = person.state
     self.zip = person.zip
@@ -222,11 +227,10 @@ class Honoree:
     self.address = '\n'.join([self.addr, self.csz])
     self.dear = self.firstname
     self.sendpaper = False
-    try:
-        self.email1 = person.email
-    except AttributeError:
-        self.email1 = ''
-    self.email2 = ''
+    self.emails = []
+    if person.email:
+        self.emails.append(person.email)
+
   
   def addname(self, person):
     self.firstname = [self.firstname, person.firstname]
@@ -237,14 +241,9 @@ class Honoree:
       self.fullnames = ' and '.join(self.fullname)
     else:
       self.fullnames = ' and '.join(self.firstname) + ' ' + self.lastname
-    try:
-      self.email2 = person.email
-    except AttributeError:
-      self.email2 = ''
+    if person.email and person.email not in self.emails:
+        self.emails.append(person.email)
     
-    
- 
-
 
 def getLabelsFromSheet(sheet):
   """Returns all of the labels from a spreadsheet as a dict"""
@@ -302,13 +301,26 @@ if __name__ == '__main__':
         for name in (row.name1, row.name2, row.name3, row.name4):
             if name:
                 name = ' '.join(name.strip().split())
+
+                # Strip 'and team'
+                try:
+                    teamptr = name.index(' and team')
+                    name = name[:teamptr]
+                except ValueError:
+                    pass
+
                 lname = name.lower()
-                if lname != 'xxx' and 'anniversary' not in lname and 'confirmation' not in lname:
+                skipme = False
+                for item in ('xxx', 'anniversary', 'confirmation', 'conf', '35+', 'teens', 'birthdays'):
+                    skipme = skipme or item in lname.split()
+                if not skipme:
                     person = People.findbyname(name)
                     if person:
                         honor.assign(person)
                     else:
                         print('Could not find %s for honor %s' % (name, row.honorid))
+                else:
+                    print(f'Honor {row.honorid} ({row.description}) for {name} must be handled by the office.')
                     
 
 
@@ -342,7 +354,11 @@ if __name__ == '__main__':
       'ToText',
       'Filename',
       'Sharing',
-      'Explanation'))
+      'Explanation',
+      'Adminname',
+      'Adminemail',
+      'President'
+                      ))
   
     cuesheets = {}
     gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
@@ -371,7 +387,15 @@ if __name__ == '__main__':
           honorname = theHonor.description
   
       for s in theHonor.sharing():
-          if '@' not in s['me'].email1  or (s['me'].email2 and '@' not in s['me'].email2):
+          try:
+              email1 = s['me'].emails[0]
+          except IndexError:
+              email1 = ''
+          try:
+              email2 = s['me'].emails[1]
+          except:
+              email2 = ''
+          if '@' not in email1 or (email2 and '@' not in email2):
               print('Missing email for %s' % s['me'].fullnames)
               s['me'].sendpaper = True 
           
@@ -379,8 +403,8 @@ if __name__ == '__main__':
           s['me'].fullnames,
           s['me'].addr,
           s['me'].csz,
-          s['me'].email1,
-          s['me'].email2,
+          email1,
+          email2,
           s['me'].sendpaper,
           theService.service,
           theService.date,
@@ -399,7 +423,10 @@ if __name__ == '__main__':
           theHonor.totext,
           theHonor.filename,
           s['them'],
-          theHonor.explanation.replace('\\u2026','...')))
+          theHonor.explanation.replace('\\u2026','...'),
+          parms.adminname,
+          parms.adminemail,
+          parms.president))
       
           if theHonor.filename:
               snum = theHonor.filename[0]

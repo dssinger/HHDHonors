@@ -84,12 +84,19 @@ class Nickname:
         
     @classmethod
     def setnicknames(self):
+        return
         Nickname('Ivan (Rusty)', 'Gralnik', 'Rusty')
         Nickname('S. Henry', 'Stern', 'Henry')
         Nickname('Itzhak', 'Nir', 'Itzik')
         Nickname('Isabelle', 'Schneider', 'Billee')
         Nickname('Rebecca Katz', 'Tedesco', 'Rebecca', 'Katz Tedesco')
         Nickname('Hugh', 'Seid-Valencia', 'Rabbi Hugh', 'Seid-Valencia')
+        Nickname('Julia', 'Hartman', 'Julie')
+        Nickname('Marilyn', 'Keelan', 'Lindy')
+        Nickname('Michael', 'Adelman', 'Mickey')
+        Nickname('Jeffrey', 'Segol', 'Jeff')
+        Nickname('Adrian E', 'Cerda', 'Adrian')
+        Nickname('Stephen', 'Jackson', 'Steve')
         
         
     def __repr__(self):
@@ -141,6 +148,7 @@ class People:
                 ('Mady', 'Madeleine'),
                 ('Pat', 'Patricia')
                 )
+    namesyns = ()
                 
     Nickname.setnicknames()
                 
@@ -156,9 +164,11 @@ class People:
     @classmethod
     def loadpeople(self, fn, debug=False):
         self.debug = debug
-        commonfields = ('household_id', 'mail_name_informal', 'combined_name', 'address', 'address_2', 'city', 'state', 'zip' )
-        personfields = ('email', 'firstname', 'lastname')
+        commonfields = ('household_id', 'address', 'address2', 'city', 'state', 'zip' )
+        personfields = ('email', 'title', 'firstname', 'lastname', 'nickname')
         firstnamecol = personfields.index('firstname')
+        nicknamecol = personfields.index('nickname')
+        emailcol = personfields.index('email')
         thefields = personfields + commonfields
         p1fields = ['primary_' + f for f in personfields] + list(commonfields)
         p2fields = ['secondary_' + f for f in personfields] + list(commonfields)
@@ -170,20 +180,18 @@ class People:
             values = [normalize(v) for v in sheet.row_values(r+1)]
             row = {self.labels[i]: values[i] for i in range(len(values))}
 
+            # if only the primary in a row has an email, give it to the secondary, too
+            if not row['secondary_email']:
+                row['secondary_email'] = row['primary_email']
+
             for fgroup in (p1fields, p2fields):
                 # Load each person, taking firstname synonyms into account
                 altnames = False
                 # Handle firstname synonyms:
                 pinfo = [row[field] for field in fgroup]
-                for ng in self.namesyns:
-                    if row[fgroup[firstnamecol]] in ng:
-                        for name in ng:
-                            pinfo[firstnamecol] = name
-                            person = People(pinfo, thefields, ingroup=True)
-                        altnames = True
-                        break
-                if not altnames:
-                    People(pinfo, thefields)
+                People(pinfo, thefields)
+                if  pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
+                    People(pinfo, thefields, firstname = pinfo[nicknamecol])
             
     @classmethod
     def find(self, id):
@@ -207,26 +215,26 @@ class People:
         return "%s, %s, %s  %s" % (self.streetaddress, self.city, self.state, self.postalcode)
         
     def handlenickname(self):
+        return
         """Process names where the roster has a formal name but we want to use an informal name"""
-        update = Nickname.find(self.key)
-        if update:
-            dparts = self.displayname.split()
-            for i in range(len(dparts)):
-                if dparts[i] == self.firstname:
-                    dparts[i] = update.newfirst
-                if dparts[i] == self.lastname:
-                    dparts[i] = update.newlast
-            self.displayname = ' '.join(dparts)
-            (self.key, self.firstname, self.lastname) = (update.newkey, update.newfirst, update.newlast)
+        if self.nickname and self.firstname != self.nickname:
+            self.displayname = self.nickname + ' ' + self.lastname
 
 
-            
+
+
 	
-    def __init__(self, row, labels, ingroup=False):
+    def __init__(self, row, labels, firstname=None, lastname=None):
         for x in range(len(row)):
             setattr(self, labels[x], row[x])
+
+        # Handle special processing for names if needed:
+        if firstname:
+            self.firstname = firstname
+        if lastname:
+            self.lastname = lastname
+
         # Let's try to normalize the street address, at least for things like Dr/Dr./Drive
-        
         sa = []
         for w in self.address.split():
             wc = w.replace('.','')
@@ -237,7 +245,6 @@ class People:
             else:
                 sa.append(w)
         self.address = ' '.join(sa)
-    
         
         self.key = self.firstname + ' ' + self.lastname
         self.displayname = self.key
@@ -248,7 +255,7 @@ class People:
     
         
         if self.debug and self.key in self.people:
-            if not ingroup:
+            if not firstname and not lastname:
                 print("Duplicate: %s" % self.key)
                 other = self.people[self.key]
                 for one in other:

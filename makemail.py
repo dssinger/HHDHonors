@@ -10,12 +10,12 @@ import os
 import textwrap
 from urllib.parse import quote_plus, quote
 
-mformurl = "https://docs.google.com/forms/d/e/1FAIpQLSfw_P9yYEWCLHNraTnlTLvChAUfci6l3Dd7y_1F-4U4bqWqMA/viewform?usp=pp_url&entry.1032808708=honortodisplay&entry.365808493=name&entry.172610770=service&entry.1586648944=honorid&entry.177841022=honordesc"
 
 
 if  __name__ == '__main__':
     from parms import Parms
     parms = Parms()
+    mformurl = f"https://docs.google.com/forms/d/e/{parms.responseform}/viewform?usp=pp_url&entry.1032808708=honortodisplay&entry.365808493=name&entry.172610770=service&entry.1586648944=honorid&entry.177841022=honordesc"
     os.chdir(parms.datadir)
     
     sourcedir = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +28,7 @@ if  __name__ == '__main__':
     os.chdir(parms.maildir)
     
     batfile = open('sendem.sh', 'w')
+    os.chmod('sendem.sh', 0o755)
     batfile.write('#!/bin/sh\n')
     batfile.write('cd "%s"\n' % os.path.join(parms.datadir, parms.maildir))
     rdr = csv.DictReader(infile)
@@ -56,10 +57,10 @@ if  __name__ == '__main__':
         parts.append('<ul>')
         parts.append('<li>Responding at <a href="%s">this link</a>, or</li>' % formurl)
         parts.append('<li>Emailing <a href="mailto:honors@shirhadash.org?subject=' + emailsub + '">honors@shirhadash.org</a>, or</li>')
-        parts.append('<li>Calling Gloria Clouss at the Temple Office, 408-358-1751 x7.</li>')
+        parts.append(f'<li>Calling {parms.adminname} at the Temple Office, 408-358-1751 x7.</li>')
         parts.append('</ul>')
         parts.append('</div>')
-        parts.append('<p>If you have questions about this honor, please contact <a href="mailto:rabbiaron@shirhadash.org?subject=Questions%20about%20High%20Holy%20Day%20Honor%20' + emailsub + '">Rabbi Aron</a>.</p>')
+        parts.append(f'<p>If you have questions about this honor, please contact <a href="mailto:{parms.rabbiemail}?subject=Questions%20about%20High%20Holy%20Day%20Honor%20' + emailsub + '">Rabbi Aron</a>.</p>')
         outhtml.append(' '.join(parts))
         outhtml.append('<p>On %s, please arrive at %s (%s minutes before the beginning of the worship service) in order to meet with %s, who will review your participation in the service and answer questions about seating and cues.</p>' % (line['Holiday'], line['Arrive'], line['Early'], line['Rabbi']))
         if line['Filename']:
@@ -72,7 +73,7 @@ if  __name__ == '__main__':
 
         # Prepare the plain-text alternative.
         
-        textonly = 'Please call Gloria Clouss at the Temple Office, 408-358-1751 x7, to let us know if you will be able to accept this honor.'
+        textonly = f'Please call {parms.adminname} at the Temple Office, 408-358-1751 x7, to let us know if you will be able to accept this honor.'
         text = [re.sub(r'<div id="onlyhtml">.*?</div>', textonly, x) for x in outhtml]
         
         text = [re.sub(r'<br.*?>', '\n\n', x) for x in text]
@@ -81,8 +82,8 @@ if  __name__ == '__main__':
         
         # Add signatures to both alternatives.
 
-        outhtml.append('<p>\n<p><p>Sincerely,</p><p>\n</p><p>Naomi Parker<br />President</p>')
-        outtext += '\n\nSincerely,\n\nNaomi Parker, President'
+        outhtml.append(f'<p>\n<p><p>Sincerely,</p><p>\n</p><p>{parms.president}<br />President</p>')
+        outtext += f'\n\nSincerely,\n\n{parms.president}, President'
     
 
         outfn = '%03d' % linenum
