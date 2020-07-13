@@ -1,4 +1,5 @@
 .idea/*
+googleapi.json
 *.yaml
 *.yml
 makeallparts.sh
