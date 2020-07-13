@@ -17,7 +17,7 @@ import re
 import gspread
 
 def normalize(s):
-    return s.lower().replace(' ','')
+    return str(s).lower().replace(' ','')
 
 parms = Parms()
 
@@ -56,7 +56,7 @@ labels = [normalize(l) for l in allvalues[0]]
 # Find the year - it's right after "Alternative"
 altcol = labels.index('alternative')
 yearcol = altcol + 1
-year = labels[yearcol]
+year = str(labels[yearcol])
 
 # And find the 'Years' and 'Honor ID'
 yearscol = labels.index('years')
