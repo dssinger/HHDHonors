@@ -19,18 +19,11 @@ import gspread
 def normalize(s):
     return s.lower().replace(' ','')
 
-def getColLabel(i):
-    return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i-1]
-
-
-
 parms = Parms()
 
-# Establish Google API authorization
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+# Need to do this before we move to the data directory:
+gc = gspread.auth.service_account(filename=parms.googleapifile)
 
-creds = service_account.Credentials.from_service_account_file(
-    parms.googleapifile, scopes=SCOPES)
 
 
 os.chdir(parms.datadir)
@@ -43,7 +36,6 @@ with open(parms.honorscsv, newline='') as csvfile:
         lyhonors.add(row['HonorID'])
 
 # Now, update the master file.
-request = discovery.build('sheets', 'v4', credentials=creds).spreadsheets().values()
 sheetid = parms.honorsmaster
 if '/' in sheetid:
     # Have a whole URL; get the key
@@ -51,36 +43,47 @@ if '/' in sheetid:
 
 sheetid = '1z59UcCaDUUPa5DmEvXvFxa6nkMQ8xlTznd57XNwhb6U'
 
+sheet = gc.open_by_key(sheetid).sheet1
+
+# Get everything
+
+allvalues = sheet.get_all_values(value_render_option='UNFORMATTED_VALUE')
+
 # Get the labels
-labels = request.get(spreadsheetId=sheetid, range='A1:Z1').execute()['values']
-labels = [normalize(l) for l in labels[0]]
+labels = [normalize(l) for l in allvalues[0]]
 
 
 # Find the year - it's right after "Alternative"
 altcol = labels.index('alternative')
-altcollabel = getColLabel(altcol)
-year = labels[altcol+1]
+yearcol = altcol + 1
+year = labels[yearcol]
 
 # And find the 'Years' and 'Honor ID'
 yearscol = labels.index('years')
-yearscollabel = getColLabel(yearscol)
 idcol = labels.index('honorid')
 
 # Now go through the rest of the file and update as required
 
+updates = []
+
 rownum = 1
-while True:
+for row in allvalues[1:]:
     rownum += 1
-    range = f'A{rownum}:Z{rownum}'
-    row = request.get(spreadsheetId=sheetid, range=range).execute()
-    values = row['values'][0]
-    if values[idcol] in lyhonors:
-        if not values[yearscol].endswith(year):
-            if values[yearscol]:
-                values[yearscol] += ',' + year
+    id = str(row[idcol])
+    if id in lyhonors or (f'id{row[altcol]}' in lyhonors):
+        if not row[yearscol].endswith(year):
+            if row[yearscol].strip():
+                row[yearscol] += ',' + year
             else:
-                values[yearscol] = year
-        values[altcol] = ''
-        request.update(spreadsheetId=sheetid, range=range, body=values).execute()
-        pprint(response)
+                row[yearscol] = year
+    row[yearcol] = ''
+    #updates.append({'range':f'A{rownum}:Z{rownum}', 'values':[row]})
+
+# Update the year
+allvalues[0][yearcol] = int(year) + 1
+# Now, do the updates
+
+range = gspread.utils.rowcol_to_a1(1+len(allvalues), 1+len(allvalues[0]))
+sheet.batch_update([{'range': f'A1:{range}','values':allvalues}])
+
 
