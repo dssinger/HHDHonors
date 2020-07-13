@@ -1,11 +1,11 @@
 #!/bin/sh
-mkdir "$HOME/Dropbox/HHD Cues/partsfootered"
-cd "$HOME/Dropbox/HHD Cues/parts"
+cd "$HOME/Dropbox/HHD Cues/nofooters/"
 
 
-for i in 2040*.pdf
+for i in *.pdf
   do
-    gs -o ./footer.pdf  -sDEVICE=pdfwrite -c "/Helvetica findfont 14 scalefont setfont" -c "50 50 moveto ($i) show showpage"
-    pdftk "$i" stamp footer.pdf output "../partsfootered/$i"
+    gs -o ./footer.pdf  -sDEVICE=pdfwrite -c "/Helvetica findfont 14 scalefont setfont" -c "50 20 moveto ($i) show showpage"
+    pdftk "$i" stamp footer.pdf output "../parts/$i"
   done
+rm footer.pdf ../parts/footer.pdf
 
