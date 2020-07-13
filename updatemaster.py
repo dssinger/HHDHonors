@@ -41,8 +41,6 @@ if '/' in sheetid:
     # Have a whole URL; get the key
     sheetid = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', sheetid).groups()[0]
 
-sheetid = '1z59UcCaDUUPa5DmEvXvFxa6nkMQ8xlTznd57XNwhb6U'
-
 sheet = gc.open_by_key(sheetid).sheet1
 
 # Get everything
