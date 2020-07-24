@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # vim: set fileencoding=utf-8 :
-""" Make the files to be used for email """
+""" Make the files to be used for email
+
+    This is the special 2020 version for Zoom services.  Things that are different:
+    * If two people are sharing an honor, the first one reads the prayers before the reading and the second
+      reads the prayers after the reading.
+    * Except honor 6320, where the first person reads Hebrew and the second reads English.
+    * We do not ask people to call the office.
+    """
+
 import xlrd
 import sys
 import csv
@@ -16,10 +24,12 @@ if  __name__ == '__main__':
     from parms import Parms
     parms = Parms()
     mformurl = f"https://docs.google.com/forms/d/e/{parms.responseform}/viewform?usp=pp_url&entry.1032808708=honortodisplay&entry.365808493=name&entry.172610770=service&entry.1586648944=honorid&entry.177841022=honordesc"
-    os.chdir(parms.datadir)
     
     sourcedir = os.path.dirname(os.path.abspath(__file__))
+    print(sourcedir)
+    print(os.path.abspath(__file__))
     
+    os.chdir(parms.datadir)
     infile = open(parms.honorscsv, 'r')
     try:
         os.mkdir(parms.maildir)
@@ -33,8 +43,15 @@ if  __name__ == '__main__':
     batfile.write('cd "%s"\n' % os.path.join(parms.datadir, parms.maildir))
     rdr = csv.DictReader(infile)
     linenum = 0
+    sharer = 0
+    lasthonor = None
     for line in rdr:
         linenum += 1
+        if line['HonorID'] == lasthonor:
+            sharer += 1
+        else:
+            lasthonor = line['HonorID']
+            sharer = 0
         outhtml = []
         formurl = mformurl
         formurl = formurl.replace("honortodisplay",quote_plus("%s (%s)" % (line['Honor'], line['Service'])))
@@ -45,9 +62,17 @@ if  __name__ == '__main__':
         emailsub = quote('HHD Honor ' + line['HonorID'] + ': ' + line['Honor'] + ' (' + line['Service'] + ')')
         outhtml.append('<p>Dear %s,</p>' % line['Dear'])
         parts = ["<p>L'shanah Tovah!  It is my great pleasure to invite you to participate in our High Holy Day services with the honor"]
-        parts.append('<b>%s</b> at <b>%s</b> Services on <b>%s</b> at <b>%s</b>.' % (line['Honor'], line['Service'], line['Service_Date'], line['Location']))
+        parts.append('<b>%s</b> at <b>%s</b> Services on <b>%s</b>.' % (line['Honor'], line['Service'], line['Service_Date']))
         if line['Sharing']:
-            parts.append('You will be joined in this honor by %s.' % line['Sharing'])
+            if line['HonorID'] == '6320':
+                options = ('Hebrew text', 'English text')
+            else:
+                if line['Honor'].startswith("Haftarah"):
+                    scroll = 'Haftarah'
+                else:
+                    scroll = 'Torah'
+                options = (f'blessing before the {scroll} is read', f'blessing after the {scroll} is read')
+            parts.append(f'You will read the {options[sharer]}.  ({line["Sharing"]} will read the {options[::-1][sharer]}.)')
         parts.append('</p>')
         parts.append('<p>I\'m pleased that we are able to recognize your special contribution to the life of our congregation in this way and express our appreciation for your dedication in the past year.</p>')
         outhtml.append(' '.join(parts))
@@ -56,15 +81,15 @@ if  __name__ == '__main__':
         parts.append("Please let us know if you will be able to accept this honor by:")
         parts.append('<ul>')
         parts.append('<li>Responding at <a href="%s">this link</a>, or</li>' % formurl)
-        parts.append('<li>Emailing <a href="mailto:honors@shirhadash.org?subject=' + emailsub + '">honors@shirhadash.org</a>, or</li>')
-        parts.append(f'<li>Calling {parms.adminname} at the Temple Office, 408-358-1751 x7.</li>')
+        parts.append('<li>Emailing <a href="mailto:honors@shirhadash.org?subject=' + emailsub + '">honors@shirhadash.org</a></li>')
         parts.append('</ul>')
         parts.append('</div>')
-        parts.append(f'<p>If you have questions about this honor, please contact <a href="mailto:{parms.rabbiemail}?subject=Questions%20about%20High%20Holy%20Day%20Honor%20' + emailsub + '">Rabbi Aron</a>.</p>')
-        outhtml.append(' '.join(parts))
-        outhtml.append('<p>On %s, please arrive at %s (%s minutes before the beginning of the worship service) in order to meet with %s, who will review your participation in the service and answer questions about seating and cues.</p>' % (line['Holiday'], line['Arrive'], line['Early'], line['Rabbi']))
+        parts.append(f'<p>If you have questions about this honor, please contact <a href="mailto:{parms.rabbiemail}?subject=Questions%20about%20High%20Holy%20Day%20Honor%20{emailsub}">{parms.rabbiname}</a>.</p>')
+        outhtml.append('\n'.join(parts))
+        outhtml.append(f'<p><b>Before</b> {line["Service"]}, please go to the <a href="https://shirhadash.org/">Shir Hadash website</a> and sign up for the service so you will receive the Zoom link in advance.  ')
+        outhtml.append(f'<b>On</b> {line["Service"]}, please come online at {line["Arrive"]} to practice unmuting and be ready for your participation.')
         if line['Filename']:
-            outhtml.append('<p>Please remember to print the attached cue sheet and bring it with you to the service.</p>')
+            outhtml.append('<p>Please remember to print the attached cue sheet and have it handy during the Zoom call.</p>')
         if line['Explanation']:
             outhtml.append('<p>%s</p>' % line['Explanation'])
         if line['FromText']:
@@ -73,11 +98,11 @@ if  __name__ == '__main__':
 
         # Prepare the plain-text alternative.
         
-        textonly = f'Please call {parms.adminname} at the Temple Office, 408-358-1751 x7, to let us know if you will be able to accept this honor.'
+        textonly = f'Please email honors@shirhadash.org to let us know if you will be able to accept this honor.'
         text = [re.sub(r'<div id="onlyhtml">.*?</div>', textonly, x) for x in outhtml]
         
         text = [re.sub(r'<br.*?>', '\n\n', x) for x in text]
-    
+
         outtext = '\n\n'.join([textwrap.fill(re.sub(r'<.*?>', '', x),72) for x in text])
         
         # Add signatures to both alternatives.
