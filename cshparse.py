@@ -67,7 +67,7 @@ class cshparse(Singleton):
         self.args = self.parser.parse_args()
 
         # Set values from the YML file
-        self.ymlvalues= yaml.load(open(self.args.YMLfile,'r'))
+        self.ymlvalues= yaml.load(open(self.args.YMLfile,'r'), Loader=yaml.FullLoader)
         for name in self.ymlvalues:
             self.__dict__[name] = self.ymlvalues[name]
 
