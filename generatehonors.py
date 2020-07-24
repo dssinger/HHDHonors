@@ -289,8 +289,12 @@ if __name__ == '__main__':
 
     # Honor.all has all the honors.  Now, we process the assignment file
 
-    # Now, process the assignment file
-    assignments = GSheet(parms.assignments, parms.apikey)
+    # Now, process the assignment file:
+    try:
+        sheetname = parms.assignmentsheetname
+    except AttributeError:
+        sheetname = None
+    assignments = GSheet(parms.assignments, parms.apikey, sheetname)
     for row in assignments:
         if not row.honorid:
             continue   # No honorid for many office-managed roles.
