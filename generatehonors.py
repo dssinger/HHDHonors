@@ -204,6 +204,18 @@ class Honor:
       res.append(entry)
     return res
 
+class DividedReading:
+    all = {}
+    def __init__(self, row):
+        self.part = row.part
+        self.page = row.page
+        self.beginswith = row.beginswith
+        self.endswith = row.endswith
+        self.cue = row.cue
+        if self.part not in self.all:
+            self.all[self.part] = [self]
+        else:
+            self.all[self.part].append(self)
 
 
 class Honoree:
@@ -286,19 +298,23 @@ if __name__ == '__main__':
     
     for row in master:
         Honor(row)
+    # Honor.all has all the honors.
 
-    # Honor.all has all the honors.  Now, we process the assignment file
+    # Process divided readings if we have them this year:
+    sheetname = getattr(parms, 'dividedsheetname', '')
+    if sheetname:
+        dr = GSheet(parms.honorsmaster, parms.apikey, sheetname=sheetname)
+        for row in dr:
+            DividedReading(row)
+
 
     # Now, process the assignment file:
-    try:
-        sheetname = parms.assignmentsheetname
-    except AttributeError:
-        sheetname = None
+    sheetname = getattr(parms, 'assignmentsheetname', '')
     assignments = GSheet(parms.assignments, parms.apikey, sheetname)
     for row in assignments:
         if not row.honorid:
             continue   # No honorid for many office-managed roles.
-        honor = Honor.find(row.honorid)
+        honor = Honor.find(row.honorid+row.alternative)
         if not honor:
             print('Could not find honor', row.honorid)
             continue
@@ -315,7 +331,7 @@ if __name__ == '__main__':
 
                 lname = name.lower()
                 skipme = False
-                for item in ('xxx', 'anniversary', 'confirmation', 'conf', '35+', 'teens', 'birthdays'):
+                for item in ('xxx', 'anniversary', 'confirmation', 'conf', '35+', 'teens', 'birthdays', 'photo'):
                     skipme = skipme or item in lname.split()
                 if not skipme:
                     person = People.findbyname(name)
@@ -390,7 +406,7 @@ if __name__ == '__main__':
       if not honorname:
           honorname = theHonor.description
   
-      for s in theHonor.sharing():
+      for (num, s) in enumerate(theHonor.sharing()):
           try:
               email1 = s['me'].emails[0]
           except IndexError:
@@ -401,7 +417,24 @@ if __name__ == '__main__':
               email2 = ''
           if '@' not in email1 or (email2 and '@' not in email2):
               print('Missing email for %s' % s['me'].fullnames)
-              s['me'].sendpaper = True 
+              s['me'].sendpaper = True
+
+          # Handle divided readings:
+          if theHonor.honorid in DividedReading.all:
+              dr = DividedReading.all[theHonor.honorid][num]
+              pages = 'page ' + dr.page
+              cue = dr.cue
+              fromtext = dr.beginswith
+              totext = dr.endswith
+              fparts = theHonor.filename.split('.')
+              fparts[0] = f'{fparts[0]}-{num}'
+              filename = '.'.join(fparts)
+          else:
+              cue = theHonor.cue
+              fromtext = theHonor.fromtext
+              totext = theHonor.totext
+              filename = theHonor.filename
+
           
           outfile.writerow((s['me'].dear,
           s['me'].fullnames,
@@ -422,10 +455,10 @@ if __name__ == '__main__':
           honorname.replace('\\u2026','...'),
           theHonor.book,
           pages,
-          theHonor.cue.replace('\\u2026','...'),
-          theHonor.fromtext,
-          theHonor.totext,
-          theHonor.filename,
+          cue.replace('\\u2026','...'),
+          fromtext,
+          totext,
+          filename,
           s['them'],
           theHonor.explanation.replace('\\u2026','...'),
           parms.adminname,
