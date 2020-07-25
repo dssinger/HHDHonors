@@ -63,16 +63,22 @@ if  __name__ == '__main__':
         outhtml.append('<p>Dear %s,</p>' % line['Dear'])
         parts = ["<p>L'shanah Tovah!  It is my great pleasure to invite you to participate in our High Holy Day services with the honor"]
         parts.append('<b>%s</b> at <b>%s</b> Services on <b>%s</b>.' % (line['Honor'], line['Service'], line['Service_Date']))
-        if line['Sharing']:
+        if line['Sharing'] and line['HonorID'] < '8000':
+            shabbatnote = ''
             if line['HonorID'] == '6320':
                 options = ('Hebrew text', 'English text')
             else:
                 if line['Honor'].startswith("Haftarah"):
                     scroll = 'Haftarah'
+                    if line['Filename'].split('.')[0].endswith('s') and sharer == 1:
+                        shabbatnote = "Please note the special wording for Shabbat in the blessing after the Haftarah reading.  Contact the Cantor if you would like a recording of this blessing."
                 else:
                     scroll = 'Torah'
                 options = (f'blessing before the {scroll} is read', f'blessing after the {scroll} is read')
+
             parts.append(f'You will read the {options[sharer]}.  ({line["Sharing"]} will read the {options[::-1][sharer]}.)')
+            if shabbatnote:
+                parts.append(f'</p>\n{shabbatnote}')
         parts.append('</p>')
         parts.append('<p>I\'m pleased that we are able to recognize your special contribution to the life of our congregation in this way and express our appreciation for your dedication in the past year.</p>')
         outhtml.append(' '.join(parts))
@@ -110,8 +116,12 @@ if  __name__ == '__main__':
         outhtml.append(f'<p>\n<p><p>Sincerely,</p><p>\n</p><p>{parms.president}<br />President</p>')
         outtext += f'\n\nSincerely,\n\n{parms.president}, President'
     
-
-        outfn = '%03d' % linenum
+        if line['Filename']:
+            outfn = line['Filename'].split('.')[0]
+        else:
+            outfn = line['HonorID']
+        if line['Sharing']:
+            outfn += '-' + str(sharer+1)
         outf = open(outfn+'.html', 'w')
         outf.write('<html>\n<body>\n<p>')
         outf.write('</p>\n<p>'.join(outhtml))
