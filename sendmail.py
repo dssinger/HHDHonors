@@ -29,7 +29,7 @@ parms.parser.add_argument("--from", dest='from')
 parms.parser.add_argument("--to", dest='to', nargs='+', default=[], action='append')
 parms.parser.add_argument("--cc", dest='cc', nargs='+', default=[], action='append')
 parms.parser.add_argument("--bcc", dest='bcc', nargs='+', default=[], action='append')
-parms.parser.add_argument("--subject", dest='subject', default='Shir Hadash High Holiday Information')
+parms.parser.add_argument("--subject", dest='subject', default='Shir Hadash High Holy Day Honor for You')
 parms.parser.add_argument("--attachment", dest='attachment', nargs='+', default=[], action='append')
 
 parms.parse()
