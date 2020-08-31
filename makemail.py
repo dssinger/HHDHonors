@@ -164,6 +164,9 @@ if __name__ == '__main__':
         if parms.onlydo and outfn not in parms.onlydo:
             continue
 
+        if parms.onlydo:
+            print(f"{outfn}: {line['Full_Name']} - {line['Email1']} {line['Email2']}")
+
         if sleep:
             batfile.write('sleep 3\n')
         sleep = True   
