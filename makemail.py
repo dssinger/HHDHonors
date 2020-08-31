@@ -14,12 +14,15 @@ import csv
 import re
 import os
 import textwrap
+import sys
 from urllib.parse import quote_plus, quote
 
 
 if __name__ == '__main__':
     from parms import Parms
     parms = Parms()
+    parms.onlydo = sys.argv[1:]
+
     mformurl = f'https://docs.google.com/forms/d/e/{parms.responseform}/viewform?usp=pp_url&' \
                f'entry.1032808708=honortodisplay&' \
                f'entry.365808493=name&' \
@@ -28,8 +31,6 @@ if __name__ == '__main__':
                f'entry.177841022=honordesc'
     
     sourcedir = os.path.dirname(os.path.abspath(__file__))
-    print(sourcedir)
-    print(os.path.abspath(__file__))
     
     os.chdir(parms.datadir)
     infile = open(parms.honorscsv, 'r')
@@ -48,6 +49,7 @@ if __name__ == '__main__':
     sharer = 0
     lasthonor = None
     prevreader = ''
+    sleep = False
     for line in rdr:
         linenum += 1
         fullhonor = line['HonorID'].split('-')[0]
@@ -75,7 +77,7 @@ if __name__ == '__main__':
                 else:
                     if line['Honor'].startswith("Haftarah"):
                         scroll = 'Haftarah'
-                        if line['Filename'].split('.')[0].endswith('s') and sharer == 1:
+                        if line['Filename'].split('.')[0].split('-')[0].endswith('s') and sharer == 1:
                             shabbatnote = "<p>Please note the special wording for Shabbat in the blessing after the " \
                                           "Haftarah reading.  Contact the Cantor if you would like a recording of " \
                                           "this blessing.</p>"
@@ -159,6 +161,13 @@ if __name__ == '__main__':
         outf.write(outtext)
         outf.close()
 
+        if parms.onlydo and outfn not in parms.onlydo:
+            continue
+
+        if sleep:
+            batfile.write('sleep 3\n')
+        sleep = True   
+
         outtext = f'"{os.path.join(sourcedir, "sendmail.py")}" ' \
                   f'--YMLfile "{os.path.join(sourcedir, "cshmail.yml")}" ' \
                   f'--to {line["Email1"]} {line["Email2"]} ' \
@@ -168,6 +177,5 @@ if __name__ == '__main__':
             outtext += f' --attach "{os.path.join(parms.cuedir, line["Filename"])}" '
         batfile.write(outtext)
         batfile.write('\n')
-        batfile.write('sleep 10\n')
 
     batfile.close()
