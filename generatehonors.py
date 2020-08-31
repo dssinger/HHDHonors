@@ -403,12 +403,17 @@ if __name__ == '__main__':
                 s['me'].sendpaper = True
 
             # Handle divided readings:
-            if theHonor.honorid in DividedReading.all and len(theHonor.sharing()) > 1:
-                dr = DividedReading.all[theHonor.honorid][num]
-                pages = 'page ' + dr.page
-                cue = dr.cue
-                fromtext = dr.beginswith
-                totext = dr.endswith
+            if len(theHonor.sharing()) > 1:
+                if theHonor.honorid in DividedReading.all:
+                    dr = DividedReading.all[theHonor.honorid][num]
+                    pages = 'page ' + dr.page
+                    cue = dr.cue
+                    fromtext = dr.beginswith
+                    totext = dr.endswith
+                else:
+                    cue = theHonor.cue
+                    fromtext = theHonor.fromtext
+                    totext = theHonor.totext
                 fparts = theHonor.filename.split('.')
                 fparts[0] = f'{fparts[0]}-{num + 1}'
                 filename = '.'.join(fparts)
