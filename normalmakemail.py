@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # vim: set fileencoding=utf-8 :
 """ Make the files to be used for email """
-import xlrd
 import sys
 import csv
 import datetime

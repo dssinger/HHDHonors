@@ -10,7 +10,7 @@
   with a new field for "sharer".
 
 """
-import xlrd
+from openpyxl import load_workbook
 import sys
 import csv
 import datetime
@@ -84,20 +84,19 @@ class Service:
         self.early = int(self.early)
 
         # Now, let's get the times and dates into pretty form and figure out if this service is on Shabbat or not.
-        t = datetime.time(*xlrd.xldate_as_tuple(self.time, datemode)[3:])
-        a = datetime.time(*xlrd.xldate_as_tuple(self.arrive, datemode)[3:])
-        d = datetime.date(*xlrd.xldate_as_tuple(self.date, datemode)[0:3])
+        start = datetime.datetime.combine(self.date, self.time)
+        arrive = start - datetime.timedelta(minutes=self.early)
 
-        if d.weekday() == 4 and t.hour >= 19:
+        if start.weekday() == 4 and start.hour >= 19:
             self.isShabbat = True
-        elif d.weekday() == 5 and t.hour <= 19:
+        elif start.weekday() == 5 and start.hour <= 19:
             self.isShabbat = True
         else:
             self.isShabbat = False
 
-        self.time = t.strftime('%I:%M %p').lstrip('0')
-        self.arrive = a.strftime('%I:%M %p').lstrip('0')
-        self.date = d.strftime('%A, %B %d, %Y').replace(' 0', ' ')
+        self.time = start.strftime('%I:%M %p').lstrip('0')
+        self.arrive = arrive.strftime('%I:%M %p').lstrip('0')
+        self.date = start.strftime('%A, %B %d, %Y').replace(' 0', ' ')
 
         self.services[self.service] = self
 
@@ -162,7 +161,12 @@ class Honor:
 
     def __repr__(self):
         ans = "{'sharers': '%s'," % self.sharers
-        ans += ', '.join(["'%s': '%s'" % (x, self.__dict__[x]) for x in list(self.labels.keys())])
+        llist = []
+        for p in self.labels:
+            if p == 'to' or p == 'from':
+                p = p+'text'
+            llist.append(p)
+        ans += ', '.join(["'%s': '%s'" % (x, getattr(self, x, '***')) for x in llist])
         return ans
 
     def sharing(self):
@@ -245,7 +249,8 @@ class Honoree:
 
 def getLabelsFromSheet(sheet):
     """Returns all of the labels from a spreadsheet as a dict"""
-    labels = [''.join(p.split()).lower() for p in sheet.row_values(0)]
+    labels = list(sheet.iter_rows(min_row=1, max_row=1, values_only=True))[0]
+    labels = [''.join(p.split()).lower() for p in labels]
     ret = dict(list(zip(labels, list(range(len(labels))))))
     # Provide two-way associativity
     for p in list(ret.keys()):
@@ -264,15 +269,14 @@ if __name__ == '__main__':
 
     # We need to load service information first, because that determines whether we use Shabbat files or regular ones.
     # The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
-    services = xlrd.open_workbook(parms.services)
-    datemode = services.datemode
-    sheet = services.sheets()[0]
+    services = load_workbook(parms.services, data_only=True)
+    sheet = services.active
     # Put the labels into the Service class
     Service.setlabels(getLabelsFromSheet(sheet))
 
     # Now, load the services into the class
-    for r in range(sheet.nrows - 1):
-        Service(sheet.row_values(r + 1))
+    for inrow in sheet.iter_rows(min_row=2, values_only=True):
+        Service(list(inrow))
 
     # Now, load membership data
     from people import People
@@ -366,6 +370,7 @@ if __name__ == '__main__':
     cuesheets = {}
     gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
     for theHonor in Honor.all:
+        print(f'{theHonor.honorid} ({theHonor.honorforletter}): {theHonor.sharing()}')
         if theHonor.honorforletter.lower() == 'none':
             continue  # Skip honors that don't need letters generated.
 

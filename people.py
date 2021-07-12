@@ -8,7 +8,7 @@ ShulCloud has ONE record per household, containing all adults in the household.
 
 """
 
-import xlrd
+from openpyxl import load_workbook
 import re
 from datetime import datetime, date
 
@@ -25,7 +25,7 @@ def getLabelsFromSheet(sheet):
         We treat 'first_name', 'last_name', and 'id' specially to avoid problems elsewhere in the code.
         """
     labels = []
-    for p in sheet.row_values(0):
+    for p in [cell.value for cell in sheet[1]]:
         p = p.lower()
         if p.startswith('home-'):
             p = p[5:]
@@ -172,12 +172,12 @@ class People:
         thefields = personfields + commonfields
         p1fields = ['primary_' + f for f in personfields] + list(commonfields)
         p2fields = ['secondary_' + f for f in personfields] + list(commonfields)
-        s = xlrd.open_workbook(fn)
-        sheet = s.sheets()[0]
+        s = load_workbook(fn)
+        sheet = s.active
         self.setlabels(getLabelsFromSheet(sheet))
-        for r in range(sheet.nrows-1):
+        for inrow in sheet.iter_rows(min_row=2):
             # Clean up the values and put them in a dictionary indexed by column label
-            values = [normalize(v) for v in sheet.row_values(r+1)]
+            values = [normalize(v.value) for v in inrow]
             row = {self.labels[i]: values[i] for i in range(len(values))}
 
             # if only the primary in a row has an email, give it to the secondary, too
@@ -275,7 +275,6 @@ if __name__ == "__main__":
     parms = Parms()
     os.chdir(parms.datadir)
     People.loadpeople(parms.roster)
-
 
 
 

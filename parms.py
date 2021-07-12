@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ Read the honors.yaml file and set up appropriate parameters """
 import yaml
+import os
 class Parms:
     def __init__(self):
         self.contents = []
@@ -9,7 +10,7 @@ class Parms:
         # Promote values to attributes
         for item in parms:
             self.contents.append(item)
-            setattr(self, item, parms[item])
+            setattr(self, item, os.path.expanduser(parms[item]))
     
 if __name__ == '__main__':
     parms = Parms()
