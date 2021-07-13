@@ -275,6 +275,8 @@ if __name__ == "__main__":
     parms = Parms()
     os.chdir(parms.datadir)
     People.loadpeople(parms.roster)
+    for person in People.people:
+        print(person)
 
 
 
