@@ -370,7 +370,7 @@ if __name__ == '__main__':
     cuesheets = {}
     gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
     for theHonor in Honor.all:
-        print(f'{theHonor.honorid} ({theHonor.honorforletter}): {theHonor.sharing()}')
+        #print(f'{theHonor.honorid} ({theHonor.honorforletter}): {theHonor.sharing()}')
         if theHonor.honorforletter.lower() == 'none':
             continue  # Skip honors that don't need letters generated.
 
