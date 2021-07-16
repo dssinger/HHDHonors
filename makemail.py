@@ -74,17 +74,15 @@ if __name__ == '__main__':
             if line['HonorID'] < '8240':
                 if line['HonorID'] == '6320':
                     subhonor = f" ({('Hebrew text', 'English text')[sharer]})"
-                else:
-                    if line['Honor'].startswith("Haftarah"):
-                        scroll = 'Haftarah'
-                        if line['Filename'].split('.')[0].split('-')[0].endswith('s') and sharer == 1:
-                            shabbatnote = "<p>Please note the special wording for Shabbat in the blessing after the " \
-                                          "Haftarah reading.  Contact the Cantor if you would like a recording of " \
-                                          "this blessing.</p>"
-                    else:
-                        scroll = 'Torah'
-                    print(f"HonorID = line['HonorID'], Honor = {line['Honor']}, sharer = {sharer}")
-                    print(f"sharing = {line['Sharing']}")
+                elif line['Honor'].startswith("Haftarah"):
+                    scroll = 'Haftarah'
+                    if line['Filename'].split('.')[0].split('-')[0].endswith('s') and sharer == 1:
+                        shabbatnote = "<p>Please note the special wording for Shabbat in the blessing after the " \
+                                      "Haftarah reading.  Contact the Cantor if you would like a recording of " \
+                                      "this blessing.</p>"
+                    subhonor = f" (Blessing {('before', 'after')[sharer]} the {scroll} reading)"
+                elif line['Honor'].startswith("Torah"):
+                    scroll = 'Torah'
                     subhonor = f" (Blessing {('before', 'after')[sharer]} the {scroll} reading)"
             else:
                 subhonor = f" (Part {sharer+1})"

@@ -419,9 +419,12 @@ if __name__ == '__main__':
                     cue = theHonor.cue
                     fromtext = theHonor.fromtext
                     totext = theHonor.totext
-                fparts = theHonor.filename.split('.')
-                fparts[0] = f'{fparts[0]}-{num + 1}'
-                filename = '.'.join(fparts)
+                if theHonor.filename:
+                    fparts = theHonor.filename.split('.')
+                    fparts[0] = f'{fparts[0]}-{num + 1}'
+                    filename = '.'.join(fparts)
+                else:
+                    filename = ''
                 honorid = f'{theHonor.honorid}-{num + 1}'
             else:
                 cue = theHonor.cue
