@@ -83,6 +83,8 @@ if __name__ == '__main__':
                                           "this blessing.</p>"
                     else:
                         scroll = 'Torah'
+                    print(f"HonorID = line['HonorID'], Honor = {line['Honor']}, sharer = {sharer}")
+                    print(f"sharing = {line['Sharing']}")
                     subhonor = f" (Blessing {('before', 'after')[sharer]} the {scroll} reading)"
             else:
                 subhonor = f" (Part {sharer+1})"
@@ -114,11 +116,7 @@ if __name__ == '__main__':
                  f'<a href="mailto:{parms.rabbiemail}'
                  f'?subject=Questions%20about%20High%20Holy%20Day%20Honor%20{emailsub}">'
                  f'{parms.rabbiname}</a>.</p>')
-        outhtml.append(f'<p><b>Before</b> {line["Service"]}, '
-                       f'please go to the <a href="https://shirhadash.org/">Shir Hadash website</a> '
-                       f'and sign up for the service so you will receive the Zoom link in advance.  ')
-        outhtml.append(f'<b>On</b> {line["Service"]}, please come online at {line["Arrive"]} '
-                       f'to practice unmuting and be ready for your participation.')
+        outhtml.append('<p>On %s, please arrive at %s (%s minutes before the beginning of the worship service) in order to meet with %s, who will review your participation in the service and answer questions about seating and cues.</p>' % (line['Holiday'], line['Arrive'], line['Early'], line['Rabbi']))
         if line['Filename']:
             outhtml.append('<p>Please remember to print the attached cue sheet '
                            'and have it handy during the service on Zoom.</p>')
