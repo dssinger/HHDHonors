@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # vim: set fileencoding=utf-8 :
 """ Make the files to be used for email
-
-    This is the special 2020 version for Zoom services.  Things that are different:
-    * If two people are sharing an honor, the first one reads the prayers before the reading and the second
-      reads the prayers after the reading.
-    * Except honor 6320, where the first person reads Hebrew and the second reads English.
-    * We do not ask people to call the office.
     """
 
 
@@ -106,7 +100,7 @@ if __name__ == '__main__':
                  ('<div id="onlyhtml">', "Please let us know if you will be able to accept this honor by:",
                  '<ul>',
                  f'<li>Responding at <a href="{formurl}">this link</a>, or</li>',
-                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a></li>'
+                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a> (please include the number of seats to reserve in the Sanctuary for your <b>immediate</b> family)</li>'
                  '</ul>',
                  '</div>')))
         outhtml.append(
@@ -115,9 +109,11 @@ if __name__ == '__main__':
                  f'?subject=Questions%20about%20High%20Holy%20Day%20Honor%20{emailsub}">'
                  f'{parms.rabbiname}</a>.</p>')
         outhtml.append('<p>On %s, please arrive at %s (%s minutes before the beginning of the worship service) in order to meet with %s, who will review your participation in the service and answer questions about seating and cues.</p>' % (line['Holiday'], line['Arrive'], line['Early'], line['Rabbi']))
+        outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.</p>')
+        outhtml.append(f'<p>A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service. We request that you sit in your designated seat prior to and <b>after</b> your honor. We will also reserve seats in the Sanctuary for your <b>immediate</b> family during the service in which your honor takes place.')
         if line['Filename']:
             outhtml.append('<p>Please remember to print the attached cue sheet '
-                           'and have it handy during the service on Zoom.</p>')
+                           'and bring it with you to the service.</p>')
             if cueexp:
                 outhtml.append(f'<p>You will read after {cueexp}.</p>')
         if line['Explanation']:
@@ -132,7 +128,8 @@ if __name__ == '__main__':
 
         # Prepare the plain-text alternative.
         
-        textonly = 'Please email honors@shirhadash.org to let us know if you will be able to accept this honor.'
+        textonly = 'Please email honors@shirhadash.org to let us know if you will be able to accept this honor'
+        textonly += '  (please include the number of seats to reserve in the Sanctuary for your immediate family).'
         text = [re.sub(r'(?s)<div id="onlyhtml">.*?</div>', textonly, x) for x in outhtml]
         
         text = [re.sub(r'<br.*?>', '\n\n', x) for x in text]
