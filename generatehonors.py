@@ -16,6 +16,7 @@ import csv
 import datetime
 import re
 import os
+import copy
 
 datemode = 1  # make it global
 
@@ -257,6 +258,22 @@ def getLabelsFromSheet(sheet):
         ret[ret[p]] = p
     return ret
 
+class Student:
+    """ Contains information about students with honors """
+    students = {}
+    def __init__(self, row):
+        row.extend(('', '', '', '', ''))  # Ensure enough values
+        (self.firstname, self.lastname, self.parent1name, self.parent2name, self.email) = row[0:5]
+        self.parent1 = People.findbyname(self.parent1name)
+        self.parent2 = People.findbyname(self.parent2name)
+        self.key = self.firstname + ' ' + self.lastname
+        self.students[self.key] = self
+
+    @classmethod
+    def findbyname(cls, name):
+        return cls.students.get(name, None)
+
+
 
 if __name__ == '__main__':
 
@@ -280,8 +297,20 @@ if __name__ == '__main__':
 
     # Now, load membership data
     from people import People
-
     People.loadpeople(parms.roster)
+
+    # Load students
+    if parms.students:
+        import csv
+        with open(parms.students, 'r') as csvfile:
+            srdr = csv.reader(csvfile)
+            next(srdr)  # Throw away the headers
+            for row in srdr:
+                Student(row)
+
+
+
+
 
     # Load all possible honors from the master file
 
@@ -309,7 +338,7 @@ if __name__ == '__main__':
         if not honor:
             print('Could not find honor', row.honorid)
             continue
-        for name in (row.name1, row.name2, row.name3, row.name4):
+        for name in (row.name1, row.name2, row.name3, row.name4, row.name5, row.name6, row.name7, row.name8):
             if name:
                 name = ' '.join(name.strip().split())
 
@@ -329,7 +358,19 @@ if __name__ == '__main__':
                     if person:
                         honor.assign(person)
                     else:
-                        print('Could not find %s for honor %s' % (name, row.honorid))
+                        student = Student.findbyname(name)
+                        if student:
+                            p = copy.copy(student.parent1)
+                            p.firstname = student.firstname
+                            p.lastname = student.lastname
+                            p.nickname = student.firstname
+                            p.key = student.key
+                            p.fullname = student.key
+                            honor.assign(p)
+                            if student.parent2:
+                                honor.sharers[p.household_id].emails.append(student.parent2.email)
+                        else:
+                            print('Could not find %s for honor %s' % (name, row.honorid))
                 else:
                     print(f'Honor {row.honorid} ({row.description}) for {name} must be handled by the office.')
 
