@@ -272,14 +272,39 @@ class People:
 if __name__ == "__main__":
     from parms import Parms
     import os
+    import sqlite3
+    dbname = 'people.db'
     parms = Parms()
     os.chdir(parms.datadir)
     People.loadpeople(parms.roster)
-    for person in People.people:
-        print(person)
+
+    # Delete old database if it exists
+    try:
+        os.remove(dbname)
+    except FileNotFoundError:
+        pass
+
+    conn = sqlite3.connect(dbname)
+    cur = conn.cursor()
+    cur.execute('''CREATE TABLE people
+                (key text, household_id text, displayname text, firstname text, lastname text, 
+                address text, address2 text, city text, state text, zip text, email text)''')
+
+    datalist = []
+    for pnum in People.people:
+        person = People.people[pnum]
+        if isinstance(person, People):
+            datalist.append((pnum, person.household_id, person.displayname, person.firstname, person.lastname,
+                             person.address, person.address2, person.city, person.state, person.zip, person.email))
+        elif isinstance(person, list):
+            for each in person:
+                datalist.append((each.key, each.household_id, each.displayname, each.firstname, each.lastname,
+                                 each.address, each.address2, each.city, each.state, each.zip, each.email))
+        else:
+            print(f'{type(person)} is not People or list)\n{person}')
+        #print(person)
+    cur.executemany('''INSERT INTO people VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', datalist)
+    conn.commit()
 
 
 
-        
-		
-		
