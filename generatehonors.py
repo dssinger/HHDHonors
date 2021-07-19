@@ -365,7 +365,7 @@ if __name__ == '__main__':
                             p.lastname = student.lastname
                             p.nickname = student.firstname
                             p.key = student.key
-                            p.fullname = student.key
+                            p.displayname = student.key
                             honor.assign(p)
                             if student.parent2:
                                 honor.sharers[p.household_id].emails.append(student.parent2.email)
