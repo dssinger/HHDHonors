@@ -36,14 +36,14 @@ if __name__ == '__main__':
     
     batfile = open('sendem.sh', 'w')
     os.chmod('sendem.sh', 0o755)
-    batfile.write('#!/bin/sh\n')
+    batfile.write('#!/bin/bash\n')
     batfile.write('cd "%s"\n' % os.path.join(parms.datadir, parms.maildir))
+    batlist = []
     rdr = csv.DictReader(infile)
     linenum = 0
     sharer = 0
     lasthonor = None
     prevreader = ''
-    sleep = False
     for line in rdr:
         linenum += 1
         fullhonor = line['HonorID'].split('-')[0]
@@ -160,9 +160,6 @@ if __name__ == '__main__':
         if parms.onlydo:
             print(f"{outfn}: {line['Full_Name']} - {line['Email1']} {line['Email2']}")
 
-        if sleep:
-            batfile.write('sleep 3\n')
-        sleep = True   
 
         outtext = f'"{os.path.join(sourcedir, "sendmail.py")}" ' \
                   f'--YMLfile "{os.path.join(sourcedir, "cshmail.yml")}" ' \
@@ -171,7 +168,8 @@ if __name__ == '__main__':
                   f'--textfile ./{outfn}.txt '
         if line['Filename']:
             outtext += f' --attach "{os.path.join(parms.cuedir, line["Filename"])}" '
-        batfile.write(outtext)
-        batfile.write('\n')
+        batlist.append(outtext)
 
+    batlist[-1] += ' --sleep 0\n'  # The last entry doesn't need sleep
+    batfile.write('\n'.join(batlist))
     batfile.close()
