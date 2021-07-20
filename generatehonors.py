@@ -11,11 +11,9 @@
 
 """
 from openpyxl import load_workbook
-import sys
 import csv
 import datetime
 import re
-import os
 import copy
 
 datemode = 1  # make it global
@@ -217,6 +215,8 @@ class Honoree:
         self.nickname = person.nickname.strip()
         if person.title.strip() == 'Rabbi':
             self.title = 'Rabbi '
+        elif person.title.strip() == 'Cantor':
+            self.title = 'Cantor '
         else:
             self.title = ''
         self.fullname = self.title + person.displayname
@@ -377,137 +377,151 @@ if __name__ == '__main__':
     ## OK, now we can create the updated spreadsheet
     ##   and build the batch file to print the cue sheets
 
-    outfile = csv.writer(open(parms.honorscsv, 'w'))
-    outfile.writerow(('Dear',
-                      'Full_Name',
-                      'Family_Address',
-                      'Family_CSZ',
-                      'Email1',
-                      'Email2',
-                      'Send_Paper',
-                      'Service',
-                      'Service_Date',
-                      'Service_Time',
-                      'Location',
-                      'Early',
-                      'Arrive',
-                      'Holiday',
-                      'Rabbi',
-                      'HonorID',
-                      'Honor',
-                      'Book',
-                      'Pages',
-                      'Cue',
-                      'FromText',
-                      'ToText',
-                      'Filename',
-                      'Sharing',
-                      'Explanation',
-                      'Adminname',
-                      'Adminemail',
-                      'President'
-                      ))
+    with open(parms.honorscsv,'w') as outfile:
+        outcsv = csv.writer(outfile)
+        outcsv.writerow(('Dear',
+                          'Full_Name',
+                          'Family_Address',
+                          'Family_CSZ',
+                          'Email1',
+                          'Email2',
+                          'Send_Paper',
+                          'Service',
+                          'Service_Date',
+                          'Service_Time',
+                          'Location',
+                         'Early',
+                         'Arrive',
+                         'Holiday',
+                         'Rabbi',
+                         'HonorID',
+                         'Honor',
+                         'Book',
+                         'Pages',
+                         'Cue',
+                         'FromText',
+                         'ToText',
+                         'Filename',
+                         'Sharing',
+                         'Explanation',
+                         'Adminname',
+                         'Adminemail',
+                         'President'
+                         ))
 
-    cuesheets = {}
-    gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
-    for theHonor in Honor.all:
-        #print(f'{theHonor.honorid} ({theHonor.honorforletter}): {theHonor.sharing()}')
-        if theHonor.honorforletter.lower() == 'none':
-            continue  # Skip honors that don't need letters generated.
+        cuesheets = {}
+        gscmd = "gs -sDEVICE=pdfwrite -dPDFSETTINGS=/default -dNOPAUSE -dQUIET -dBATCH -sOutputFile=-"
+        for theHonor in Honor.all:
+            #print(f'{theHonor.honorid} ({theHonor.honorforletter}): {theHonor.sharing()}')
+            if theHonor.honorforletter.lower() == 'none':
+                continue  # Skip honors that don't need letters generated.
 
-        if not theHonor.sharing():
-            continue  # Skip honors with no assignees
+            if not theHonor.sharing():
+                continue  # Skip honors with no assignees
 
-        # Figure out page and book.
-        if theHonor.pagestart:
-            theHonor.book = 'Mishkan Hanefesh'
-            if theHonor.pageend:
-                pages = 'pages %s-%s' % (theHonor.pagestart, theHonor.pageend)
+            # Figure out page and book.
+            if theHonor.pagestart:
+                theHonor.book = 'Mishkan Hanefesh'
+                if theHonor.pageend:
+                    pages = 'pages %s-%s' % (theHonor.pagestart, theHonor.pageend)
+                else:
+                    pages = 'page %s' % (theHonor.pagestart)
             else:
-                pages = 'page %s' % (theHonor.pagestart)
-        else:
-            theHonor.book = ''
-            pages = ''
+                theHonor.book = ''
+                pages = ''
 
-        theService = Service.services[theHonor.service]
+            theService = Service.services[theHonor.service]
 
-        honorname = theHonor.honorforletter.strip()
-        if not honorname:
-            honorname = theHonor.description
+            honorname = theHonor.honorforletter.strip()
+            if not honorname:
+                honorname = theHonor.description
 
-        for (num, s) in enumerate(theHonor.sharing()):
-            try:
-                email1 = s['me'].emails[0]
-            except IndexError:
-                email1 = ''
-            try:
-                email2 = s['me'].emails[1]
-            except:
-                email2 = ''
-            if '@' not in email1 or (email2 and '@' not in email2):
-                print('Missing email for %s' % s['me'].fullnames)
-                s['me'].sendpaper = True
+            for (num, s) in enumerate(theHonor.sharing()):
+                try:
+                    email1 = s['me'].emails[0]
+                except IndexError:
+                    email1 = ''
+                try:
+                    email2 = s['me'].emails[1]
+                except:
+                    email2 = ''
+                if '@' not in email1 or (email2 and '@' not in email2):
+                    print('Missing email for %s' % s['me'].fullnames)
+                    s['me'].sendpaper = True
 
-            # Handle divided readings:
-            if len(theHonor.sharing()) > 1:
-                if theHonor.honorid in DividedReading.all:
-                    dr = DividedReading.all[theHonor.honorid][num]
-                    pages = 'page ' + dr.page
-                    cue = dr.cue
-                    fromtext = dr.beginswith
-                    totext = dr.endswith
+                # Handle divided readings:
+                if len(theHonor.sharing()) > 1:
+                    if theHonor.honorid in DividedReading.all:
+                        dr = DividedReading.all[theHonor.honorid][num]
+                        pages = 'page ' + dr.page
+                        cue = dr.cue
+                        fromtext = dr.beginswith
+                        totext = dr.endswith
+                    else:
+                        cue = theHonor.cue
+                        fromtext = theHonor.fromtext
+                        totext = theHonor.totext
+                    if theHonor.filename:
+                        fparts = theHonor.filename.split('.')
+                        fparts[0] = f'{fparts[0]}-{num + 1}'
+                        filename = '.'.join(fparts)
+                    else:
+                        filename = ''
+                    honorid = f'{theHonor.honorid}-{num + 1}'
                 else:
                     cue = theHonor.cue
                     fromtext = theHonor.fromtext
                     totext = theHonor.totext
+                    filename = theHonor.filename
+                    honorid = theHonor.honorid
+
+                outcsv.writerow((s['me'].dear,
+                                 s['me'].fullnames,
+                                 s['me'].addr,
+                                 s['me'].csz,
+                                 email1,
+                                 email2,
+                                 s['me'].sendpaper,
+                                 theService.service,
+                                 theService.date,
+                                 theService.time,
+                                 theService.location,
+                                 theService.early,
+                                 theService.arrive,
+                                 theService.daypart,
+                                 theService.rabbi,
+                                 honorid,
+                                 honorname.replace('\\u2026', '...'),
+                                 theHonor.book,
+                                 pages,
+                                 cue.replace('\\u2026', '...'),
+                                 fromtext,
+                                 totext,
+                                 filename,
+                                 s['them'],
+                                 theHonor.explanation.replace('\\u2026', '...'),
+                                 parms.adminname,
+                                 parms.adminemail,
+                                 parms.president))
+
                 if theHonor.filename:
-                    fparts = theHonor.filename.split('.')
-                    fparts[0] = f'{fparts[0]}-{num + 1}'
-                    filename = '.'.join(fparts)
-                else:
-                    filename = ''
-                honorid = f'{theHonor.honorid}-{num + 1}'
-            else:
-                cue = theHonor.cue
-                fromtext = theHonor.fromtext
-                totext = theHonor.totext
-                filename = theHonor.filename
-                honorid = theHonor.honorid
+                    snum = theHonor.filename[0]
+                    if snum not in cuesheets:
+                        cuesheets[snum] = []
+                    cuesheets[snum].append((theHonor.filename, honorname, s['me'].fullnames))
 
-            outfile.writerow((s['me'].dear,
-                              s['me'].fullnames,
-                              s['me'].addr,
-                              s['me'].csz,
-                              email1,
-                              email2,
-                              s['me'].sendpaper,
-                              theService.service,
-                              theService.date,
-                              theService.time,
-                              theService.location,
-                              theService.early,
-                              theService.arrive,
-                              theService.daypart,
-                              theService.rabbi,
-                              honorid,
-                              honorname.replace('\\u2026', '...'),
-                              theHonor.book,
-                              pages,
-                              cue.replace('\\u2026', '...'),
-                              fromtext,
-                              totext,
-                              filename,
-                              s['them'],
-                              theHonor.explanation.replace('\\u2026', '...'),
-                              parms.adminname,
-                              parms.adminemail,
-                              parms.president))
 
-            if theHonor.filename:
-                snum = theHonor.filename[0]
-                if snum not in cuesheets:
-                    cuesheets[snum] = []
-                cuesheets[snum].append((theHonor.filename, honorname, s['me'].fullnames))
+    # Create the honors database
+    if parms.honorsdb:
+        try:
+            os.remove(parms.honorsdb)
+        except FileNotFoundError:
+            pass
+        import subprocess
+        subprocess.run(('sqlite3', parms.honorsdb), input=f'.mode csv\n.import {parms.honorscsv} honors\n',
+                               text=True)
+
+
 
     # Finally, write the printing batch files
     import codecs
