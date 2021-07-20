@@ -3,3 +3,5 @@ googleapi.json
 *.yaml
 *.yml
 makeallparts.sh
+5782/*
+cues/*
