@@ -13,6 +13,8 @@ def avoiddups(which):
     count = cur.fetchone()[0]
     if count == 0:
       res.append(item)
+    elif parms.verbose:
+      print(f"not duplicating {item} for {parms.htmlfile} ({parms.textfile})")
   return res  
 
 import collections.abc
@@ -45,7 +47,6 @@ parms.parser.add_argument("--verbose", "-v", dest='verbose', action='store_true'
 
 parms.parse()
 parms.sender = parms.__dict__['from']  # Get around reserved word
-
 
 if parms.attachment:
     # Create wrapper and main message part
@@ -128,9 +129,6 @@ if targets and not parms.dryrun:
     # and send the mail
     mailconn.sendmail(parms.sender, targets, finalmsg)
 
-    if parms.verbose:
-      print(f'Sent {parms.htmlfile} {parms.textfile} to {parms.to}')
-
     # and sleep
     time.sleep(parms.sleep)
 
@@ -139,6 +137,9 @@ res = []
 for which in (parms.to, parms.cc, parms.bcc):
   for item in which:
     res.append((item, parms.htmlfile, parms.textfile))
+    if parms.verbose:
+      print(f'{"Would send" if parms.dryrun else "Sent"} {parms.htmlfile} {parms.textfile} to {item}')
+
 if res:
   cur.executemany('INSERT INTO mailed VALUES (?, ?, ?) ', res)
 
