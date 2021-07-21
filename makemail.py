@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parms = Parms()
     parms.onlydo = sys.argv[1:]
 
-    mformurl = f'https://docs.google.com/forms/d/e/{parms.responseform}/viewform?usp=pp_url&' \
+    mformurl = f'{parms.responseform}/viewform?usp=pp_url&' \
                f'entry.1032808708=honortodisplay&' \
                f'entry.365808493=name&' \
                f'entry.172610770=service&' \
@@ -85,22 +85,32 @@ if __name__ == '__main__':
         outhtml.append(f'<p>Dear {line["Dear"]},</p>')
         outhtml.append(
             f"<p>L'shanah Tovah!  It is my great pleasure to invite you to participate in our High Holy Day services"
-            f" on Zoom with the honor"
+            f" at Shir Hadash"
+            f" with the honor"
             f" <b>{line['Honor']}{subhonor}</b> at <b>{line['Service']} Services</b>"
-            f" on <b>{line['Service_Date']}</b>.</p>")
+            f" on <b>{line['Service_Date']}</b>.")
+        if line['Sharing'] and line['Filename']:
+            outhtml.append(f"  You will be sharing this honor with {line['Sharing']}.")
+        outhtml.append('</p>')
         if shabbatnote:
             outhtml.append(f"<p>{shabbatnote}</p>")
-        if line['HonorID'] >= '8240':
+        if line['HonorID'] >= '8140' and line['HonorID'] < '9000':
             cueexp = line['Cue'] if line['Cue'] else prevreader
         prevreader = line['Full_Name']
 
         outhtml.append('<p>I\'m pleased that we are able to recognize your special contribution to the life of our '
                      'congregation in this way and express our appreciation for your dedication in the past year.</p>')
+        outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.')
+        outhtml.append(f'A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service.  '
+                       f'We request that you sit in your designated seat prior to and <b>after</b> your honor. '
+                       f'Sanctuary seating will be limited and those with Honors at a service are being given the '
+                       f'opportunity to have their immediate family members present in the Sanctuary for that service. '
+                       f'Other seating will be available in the Chapel, Oneg Room and outdoors.</p>')
         outhtml.append('\n'.join(
                  ('<div id="onlyhtml">', "Please let us know if you will be able to accept this honor by:",
                  '<ul>',
                  f'<li>Responding at <a href="{formurl}">this link</a>, or</li>',
-                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a> (please include the number of seats to reserve in the Sanctuary for your <b>immediate</b> family)</li>'
+                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a> (please include the number of seats you would like in the Sanctuary for your <b>immediate</b> family)</li>'
                  '</ul>',
                  '</div>')))
         outhtml.append(
@@ -108,9 +118,10 @@ if __name__ == '__main__':
                  f'<a href="mailto:{parms.rabbiemail}'
                  f'?subject=Questions%20about%20High%20Holy%20Day%20Honor%20{emailsub}">'
                  f'{parms.rabbiname}</a>.</p>')
-        outhtml.append('<p>On %s, please arrive at %s (%s minutes before the beginning of the worship service) in order to meet with %s, who will review your participation in the service and answer questions about seating and cues.</p>' % (line['Holiday'], line['Arrive'], line['Early'], line['Rabbi']))
-        outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.</p>')
-        outhtml.append(f'<p>A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service. We request that you sit in your designated seat prior to and <b>after</b> your honor. We will also reserve seats in the Sanctuary for your <b>immediate</b> family during the service in which your honor takes place.')
+        outhtml.append(f"<p>On {line['Holiday']}, please arrive at {line['Arrive']} ({line['Early']} minutes before"
+                       f" the beginning of the worship service) in order to meet with {line['Rabbi']},"
+                       f" who will review your participation in the service"
+                       f" and answer questions about seating and cues.</p>")
         if line['Filename']:
             outhtml.append('<p>Please remember to print the attached cue sheet '
                            'and bring it with you to the service.</p>')
@@ -167,7 +178,13 @@ if __name__ == '__main__':
                   f' --htmlfile ./{outfn}.html ' \
                   f'--textfile ./{outfn}.txt '
         if line['Filename']:
-            outtext += f' --attach "{os.path.join(parms.cuedir, line["Filename"])}" '
+            fn = os.path.join(parms.cuedir, line["Filename"])
+            if not os.path.exists(fn):
+                fn = os.path.join(parms.cuedir, re.sub(r'-\d\.pdf', '.pdf', fn))
+            if os.path.exists(fn):
+                outtext += f' --attach "{fn}"'
+            else:
+                print(f'Could not find {fn} or {line["Filename"]} in {parms.cuedir}')
         batlist.append(outtext)
 
     batlist[-1] += ' --sleep 0\n'  # The last entry doesn't need sleep
