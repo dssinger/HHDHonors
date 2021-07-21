@@ -87,7 +87,7 @@ if __name__ == '__main__':
             f"<p>L'shanah Tovah!  It is my great pleasure to invite you to participate in our High Holy Day services"
             f" at Shir Hadash"
             f" with the honor"
-            f" <b>{line['Honor']}{subhonor}</b> at <b>{line['Service']} Services</b>"
+            f" <b>{line['Honor']}{subhonor}</b> at the <b>{line['Service']} Service</b>"
             f" on <b>{line['Service_Date']}</b>.")
         if line['Sharing'] and line['Filename']:
             outhtml.append(f"  You will be sharing this honor with {line['Sharing']}.")
