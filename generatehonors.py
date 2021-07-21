@@ -10,6 +10,8 @@
   with a new field for "sharer".
 
 """
+import sys
+
 from openpyxl import load_workbook
 import csv
 import datetime
@@ -465,6 +467,10 @@ if __name__ == '__main__':
                         fparts = theHonor.filename.split('.')
                         fparts[0] = f'{fparts[0]}-{num + 1}'
                         filename = '.'.join(fparts)
+                        if not os.path.exists(os.path.join(parms.cuedir, filename)):
+                            filename = theHonor.filename
+                            if not os.path.exists(os.path.join(parms.cuedir, filename)):
+                                print(f"Cannot find cuesheet for {filename} or {'.'.join(fparts)}")
                     else:
                         filename = ''
                     honorid = f'{theHonor.honorid}-{num + 1}'

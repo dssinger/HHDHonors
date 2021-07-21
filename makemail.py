@@ -179,8 +179,6 @@ if __name__ == '__main__':
                   f'--textfile ./{outfn}.txt '
         if line['Filename']:
             fn = os.path.join(parms.cuedir, line["Filename"])
-            if not os.path.exists(fn):
-                fn = os.path.join(parms.cuedir, re.sub(r'-\d\.pdf', '.pdf', fn))
             if os.path.exists(fn):
                 outtext += f' --attach "{fn}"'
             else:
