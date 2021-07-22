@@ -13,7 +13,7 @@ def avoiddups(which):
     count = cur.fetchone()[0]
     if count == 0:
       res.append(item)
-    elif parms.verbose:
+    elif parms.verbose >= 2:
       print(f"not duplicating {item} for {parms.htmlfile} ({parms.textfile})")
   return res  
 
@@ -43,10 +43,13 @@ parms.parser.add_argument("--subject", dest='subject', default='Shir Hadash High
 parms.parser.add_argument("--attachment", dest='attachment', nargs='+', default=[], action='append')
 parms.parser.add_argument("--dry-run", dest='dryrun', action='store_true')
 parms.parser.add_argument("--sleep", dest='sleep', type=float, default=3)
-parms.parser.add_argument("--verbose", "-v", dest='verbose', action='store_true')
+parms.parser.add_argument("--verbose", "-v", dest='verbose', default=1, action='count')
+parms.parser.add_argument("--quiet", "-q", dest='quiet', default=0, action='count')
 
 parms.parse()
 parms.sender = parms.__dict__['from']  # Get around reserved word
+
+parms.verbose = parms.verbose - parms.quiet  # Resolve verbosity level
 
 if parms.attachment:
     # Create wrapper and main message part
@@ -137,7 +140,7 @@ res = []
 for which in (parms.to, parms.cc, parms.bcc):
   for item in which:
     res.append((item, parms.htmlfile, parms.textfile))
-    if parms.verbose:
+    if parms.verbose >= 1:
       print(f'{"Would send" if parms.dryrun else "Sent"} {parms.htmlfile} {parms.textfile} to {item}')
 
 if res:
