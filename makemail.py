@@ -176,7 +176,6 @@ if __name__ == '__main__':
                   f'--YMLfile "{os.path.join(sourcedir, "cshmail.yml")}" ' \
                   f'--to {line["Email1"]} {line["Email2"]} ' \
                   f' --htmlfile ./{outfn}.html ' \
-                  f' --verbose ' \
                   f'--textfile ./{outfn}.txt '
         if line['Filename']:
             fn = os.path.join(parms.cuedir, line["Filename"])
