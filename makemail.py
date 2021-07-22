@@ -103,7 +103,7 @@ if __name__ == '__main__':
         outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.')
         outhtml.append(f'A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service.  '
                        f'We request that you sit in your designated seat prior to and <b>after</b> your honor. '
-                       f'Sanctuary seating will be limited and those with Honors at a service are being given the '
+                       f'Sanctuary seating will be limited.  Those with Honors at a service are being given the '
                        f'opportunity to have their immediate family members present in the Sanctuary for that service. '
                        f'Other seating will be available in the Chapel, Oneg Room and outdoors.</p>')
         outhtml.append('\n'.join(
@@ -176,6 +176,7 @@ if __name__ == '__main__':
                   f'--YMLfile "{os.path.join(sourcedir, "cshmail.yml")}" ' \
                   f'--to {line["Email1"]} {line["Email2"]} ' \
                   f' --htmlfile ./{outfn}.html ' \
+                  f' --verbose ' \
                   f'--textfile ./{outfn}.txt '
         if line['Filename']:
             fn = os.path.join(parms.cuedir, line["Filename"])
