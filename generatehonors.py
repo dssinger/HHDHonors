@@ -372,7 +372,10 @@ if __name__ == '__main__':
                             if student.parent2:
                                 honor.sharers[p.household_id].emails.append(student.parent2.email)
                         else:
-                            print('Could not find %s for honor %s' % (name, row.honorid))
+                            print(f'{name} not found in roster for Honor {row.honorid} - will send invitation to {parms.adminemail}')
+                            (firstname, lastname) = name.split(maxsplit=1)
+                            p = People.add_dummy(firstname, lastname, email=parms.adminemail)
+                            honor.assign(p)
                 else:
                     print(f'Honor {row.honorid} ({row.description}) for {name} must be handled by the office.')
 

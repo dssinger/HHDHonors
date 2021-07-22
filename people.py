@@ -105,6 +105,7 @@ class Nickname:
 
 class People:
     linenumber = 1
+    dummycount = 0
     people = {}
     debug = False
     synonyms = {
@@ -221,8 +222,12 @@ class People:
             self.displayname = self.nickname + ' ' + self.lastname
 
 
-
-
+    @classmethod
+    def add_dummy(self, firstname=None, lastname=None, email=None):
+        self.dummycount += 1
+        labels = ['nickname', 'household_id', 'title', 'address', 'city', 'state', 'zip', 'email', 'address2']
+        row = ['', f'dummy{self.dummycount}', '', '20 Cherryblossom', 'Los Gatos', 'CA', '95032', email, '']
+        return People(row, labels, firstname, lastname)
 	
     def __init__(self, row, labels, firstname=None, lastname=None):
         for x in range(len(row)):
