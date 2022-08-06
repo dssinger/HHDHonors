@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Handle parameters for the TMSTATS family of programs.
+""" Handle parameters for the CSH High Holiday Honors programs.
     Parameters can come on the command line or from the tmstats.yml file.
 
     Usage:
@@ -22,7 +22,7 @@ class Singleton(object):
         return type._the_instance
 
 class cshparse(Singleton):
-    def __init__(self, description='A program in the TMSTATS suite.', YMLfile='tmstats.yml', includedbparms=True, customformatter=True, **kwargs):
+    def __init__(self, description='Part of the CSH High Holiday Honors process', YMLfile='honors.yml', includedbparms=True, customformatter=True, **kwargs):
         if self.__dict__.get('parms', False):
             return
         if customformatter is True:
