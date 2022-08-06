@@ -1,7 +1,12 @@
 .idea/*
+.DS_Store
+__pycache__/*
 googleapi.json
 *.yaml
 *.yml
 makeallparts.sh
 5782/*
 cues/*
+maildir
+honors
+sendem.sh
