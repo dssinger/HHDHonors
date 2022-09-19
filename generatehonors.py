@@ -71,18 +71,15 @@ class Service:
 
     def __init__(self, row):
         # Convert the items in the row into attributes of the object
-        for x in range(len(row)):
-            attrname = self.labels[x]
-            if attrname not in ('time', 'arrive', 'date', 'early'):
-                row[x] = stringify(row[x])
-            self.__dict__[attrname] = row[x]
-
-        # Normalize the service name
-        self.service = normalizeService(self.service)
-        self.daypart = normalizeService(self.daypart)
-
-        # And make "early" an integer
-        self.early = int(self.early)
+        self.serviceid = row.serviceid
+        self.service = normalizeService(row.service)
+        self.date = row.convertSerial(row.date).date()
+        self.time = row.convertSerial(row.time).time()
+        self.early = int(row.early)
+        self.arrive = row.convertSerial(row.arrive).time()
+        self.daypart = normalizeService(row.daypart)
+        self.rabbi = row.rabbi
+        self.location = row.location
 
         # Now, let's get the times and dates into pretty form and figure out if this service is on Shabbat or not.
         start = datetime.datetime.combine(self.date, self.time)
@@ -287,22 +284,19 @@ if __name__ == '__main__':
     os.chdir(parms.datadir)
 
     # We need to load service information first, because that determines whether we use Shabbat files or regular ones.
-    # The "Services Master.xls" file has information about each service, which we use in preference to that in the HHD Honors file.
-    services = load_workbook(parms.services, data_only=True)
-    sheet = services.active
-    # Put the labels into the Service class
-    Service.setlabels(getLabelsFromSheet(sheet))
-
-    # Now, load the services into the class
-    for inrow in sheet.iter_rows(min_row=2, values_only=True):
-        Service(list(inrow))
+    services = GSheet(parms.services, parms.apikey, sheetname=getattr(parms, 'servicessheetname', ''),
+                      stringify=False,
+                      valueRenderOption='UNFORMATTED_VALUE', dateTimeRenderOption='SERIAL_NUMBER')
+    Service.setlabels(services.labels)
+    for row in services:
+        Service(row)
 
     # Now, load membership data
     from people import People
     People.loadpeople(parms.roster)
 
     # Load students
-    if parms.students:
+    if getattr(parms, 'students', ''):
         import csv
         with open(parms.students, 'r') as csvfile:
             srdr = csv.reader(csvfile)
