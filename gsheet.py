@@ -2,7 +2,7 @@
 
 from googleapiclient import discovery
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from itertools import zip_longest
 
 
@@ -29,12 +29,17 @@ class GSheet:
                 
         def __repr__(self):
             return ', '.join(["%s = '%s'" % (name, self.__dict__[name]) for name in self.fieldnames])
+
+        @classmethod
+        def convertSerial(cls, serial):
+            "Convert 'Serial_Number' to Python datetime"
+            return datetime(1899, 12, 30) + timedelta(serial)
             
     
 
     
     
-    def __init__(self, sheetid, apikey, sheetname=None):
+    def __init__(self, sheetid, apikey, sheetname=None, stringify=True, **kwargs):
         if '/' in sheetid:
             # Have a whole URL; get the key
             sheetid = re.search(r'/spreadsheets/d/([a-zA-Z0-9-_]+)', sheetid).groups()[0]
@@ -43,7 +48,7 @@ class GSheet:
         range = 'a1:zz999'
         if sheetname:
             range = sheetname + '!' + range
-        request = service.spreadsheets().values().get(spreadsheetId=sheetid, range=range)
+        request = service.spreadsheets().values().get(spreadsheetId=sheetid, range=range, **kwargs)
         self.values = request.execute()['values']
         self.rownum = 0
         
@@ -62,6 +67,9 @@ class GSheet:
             self.lookup[colnum] = item
             self.labels.append(item)
             colnum += 1
+
+        # Remember whether to stringify
+        self.stringify = stringify
     
             
             
@@ -75,6 +83,11 @@ class GSheet:
             raise StopIteration
         else:
             self.row = self.values[self.rownum]
-            self.strings = [stringify(item) for item in self.row]
-            return self.GSheetRow(self.labels, self.strings)
+            if self.stringify:
+                return self.GSheetRow(self.labels, [stringify(item) for item in self.row])
+            else:
+                return self.GSheetRow(self.labels, self.row)
+
+
+
             
