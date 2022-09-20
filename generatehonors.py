@@ -360,6 +360,8 @@ if __name__ == '__main__':
                             p.firstname = student.firstname
                             p.lastname = student.lastname
                             p.nickname = student.firstname
+                            if student.email:
+                                p.email = student.email
                             p.key = student.key
                             p.displayname = student.key
                             honor.assign(p)
