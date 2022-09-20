@@ -100,17 +100,16 @@ if __name__ == '__main__':
 
         outhtml.append('<p>I\'m pleased that we are able to recognize your special contribution to the life of our '
                      'congregation in this way and express our appreciation for your dedication in the past year.</p>')
-        outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.')
-        outhtml.append(f'A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service.  '
-                       f'We request that you sit in your designated seat prior to and <b>after</b> your honor. '
-                       f'Sanctuary seating will be limited.  Those with Honors at a service are being given the '
-                       f'opportunity to have their immediate family members present in the Sanctuary for that service. '
-                       f'Other seating will be available in the Chapel, Oneg Room and outdoors.</p>')
+        outhtml.append(f'<p>All honors will be conducted in person this year; we cannot accommodate remote honors.</p>')
+        if not 'Kulanu' in line['Service']:
+          outhtml.append(f'<p>A seat will be reserved in the Sanctuary for you in the Honorees Section for the {line["Service"]} Service.  '
+                         f'We request that you sit in your designated seat prior to and <b>after</b> your honor.</p> '
+                         )
         outhtml.append('\n'.join(
                  ('<div id="onlyhtml">', "Please let us know if you will be able to accept this honor by:",
                  '<ul>',
                  f'<li>Responding at <a href="{formurl}">this link</a>, or</li>',
-                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a> (please include the number of seats you would like in the Sanctuary for your <b>immediate</b> family)</li>'
+                 f'<li>Emailing <a href="mailto:honors@shirhadash.org?subject={emailsub}">honors@shirhadash.org</a></li>'
                  '</ul>',
                  '</div>')))
         outhtml.append(
@@ -139,8 +138,7 @@ if __name__ == '__main__':
 
         # Prepare the plain-text alternative.
         
-        textonly = 'Please email honors@shirhadash.org to let us know if you will be able to accept this honor'
-        textonly += '  (please include the number of seats to reserve in the Sanctuary for your immediate family).'
+        textonly = 'Please email honors@shirhadash.org to let us know if you will be able to accept this honor.'
         text = [re.sub(r'(?s)<div id="onlyhtml">.*?</div>', textonly, x) for x in outhtml]
         
         text = [re.sub(r'<br.*?>', '\n\n', x) for x in text]
