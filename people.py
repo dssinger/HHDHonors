@@ -97,6 +97,9 @@ class Nickname:
         Nickname('Jeffrey', 'Segol', 'Jeff')
         Nickname('Adrian E', 'Cerda', 'Adrian')
         Nickname('Stephen', 'Jackson', 'Steve')
+        Nickname('Sara', 'Sperling-Mintz', 'Sara', 'Mintz')
+        Nickname('Barry and Lisa', 'Cheskin', 'Barry', 'Cheskin')
+        Nickname('Gretchen', 'Sand-Preville', 'Gretchen', 'Preville')
         
         
     def __repr__(self):
@@ -161,9 +164,9 @@ class People:
     def getlinenumber(self):
         self.linenumber += 1
         return self.linenumber
-    
+
     @classmethod
-    def loadpeople(self, fn, debug=False):
+    def loadpeople2(self, fn, debug=False):   # This version is for years with two adults per record
         self.debug = debug
         commonfields = ('household_id', 'address', 'address2', 'city', 'state', 'zip' )
         personfields = ('email', 'title', 'firstname', 'lastname', 'nickname')
@@ -181,6 +184,7 @@ class People:
             values = [normalize(v.value) for v in inrow]
             row = {self.labels[i]: values[i] for i in range(len(values))}
 
+
             # if only the primary in a row has an email, give it to the secondary, too
             if not row['secondary_email']:
                 row['secondary_email'] = row['primary_email']
@@ -193,7 +197,40 @@ class People:
                 People(pinfo, thefields)
                 if  pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
                     People(pinfo, thefields, firstname = pinfo[nicknamecol])
-            
+
+    @classmethod
+    def loadpeople(self, fn, debug=False):  # This version is for years with one adult per record
+        self.debug = debug
+        commonfields = ('household_id', 'address', 'address2', 'city', 'state', 'zip')
+        personfields = ('email', 'title', 'firstname', 'lastname', 'nickname')
+        firstnamecol = personfields.index('firstname')
+        nicknamecol = personfields.index('nickname')
+        emailcol = personfields.index('email')
+        thefields = personfields + commonfields
+        p1fields = [f for f in personfields] + list(commonfields)
+        s = load_workbook(fn)
+        sheet = s.active
+        self.setlabels(getLabelsFromSheet(sheet))
+        for inrow in sheet.iter_rows(min_row=2):
+            # Clean up the values and put them in a dictionary indexed by column label
+            values = [normalize(v.value) for v in inrow]
+            row = {self.labels[i]: values[i] for i in range(len(values))}
+
+
+
+            # Load each person, taking firstname synonyms into account
+            altnames = False
+            # Some years, the data has 'address1' in it; other times, it's 'address'.  Other code wants 'address', so let's force that.
+            if 'address' not in row and 'address1' in row:
+                row['address'] = row['address1']
+            # If we don't have an 'address2', create it.
+            if 'address2' not in row:
+                row['address2'] = ''
+            pinfo = [row[field] for field in p1fields]
+            People(pinfo, thefields)
+            if pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
+                People(pinfo, thefields, firstname=pinfo[nicknamecol])
+
     @classmethod
     def find(self, id):
         try:
