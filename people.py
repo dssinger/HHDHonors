@@ -226,6 +226,8 @@ class People:
             # If we don't have an 'address2', create it.
             if 'address2' not in row:
                 row['address2'] = ''
+            # The code wants 'household_id' but the datadump has 'account_id'.  Fix it.
+            row['household_id'] = row['account_id']
             pinfo = [row[field] for field in p1fields]
             People(pinfo, thefields)
             if pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
