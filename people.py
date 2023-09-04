@@ -228,10 +228,18 @@ class People:
                 row['address2'] = ''
             # The code wants 'household_id' but the datadump has 'account_id'.  Fix it.
             row['household_id'] = row['account_id']
-            pinfo = [row[field] for field in p1fields]
-            People(pinfo, thefields)
-            if pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
-                People(pinfo, thefields, firstname=pinfo[nicknamecol])
+            # Handle hyphenated last names and composite last names
+            lastparts = [row['lastname']]
+            if '-' in row['lastname']:
+                lastparts.extend(row['lastname'].split('-'))
+            if ' ' in row['lastname']:
+                lastparts.extend(row['lastname'].split(' '))
+            for item in lastparts:  # will include any parts of a hyphenated name
+                row['lastname'] = item.strip()
+                pinfo = [row[field] for field in p1fields]
+                People(pinfo, thefields)
+                if pinfo[nicknamecol] and pinfo[nicknamecol] != pinfo[firstnamecol]:
+                    People(pinfo, thefields, firstname=pinfo[nicknamecol])
 
     @classmethod
     def find(self, id):
